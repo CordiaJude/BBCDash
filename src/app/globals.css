@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0f17;
+  --background-elevated: #10141f;
+  --foreground: #e9edf5;
+  --foreground-muted: #8b93a7;
+  --border-glass: rgba(255, 255, 255, 0.09);
+  --panel-glass: rgba(255, 255, 255, 0.055);
+  --panel-glass-strong: rgba(255, 255, 255, 0.09);
+  --shadow-color: rgba(0, 0, 0, 0.45);
+  --accent: #4f8ef7;
+  --ok: #3fb88a;
+  --bad: #e0654f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border-glass);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 800px at 15% -10%, rgba(79, 142, 247, 0.10), transparent 60%),
+    radial-gradient(1000px 700px at 110% 10%, rgba(157, 111, 224, 0.08), transparent 55%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+}
+
+.tabular {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Glass panel system ---- */
+.glass-panel {
+  background: var(--panel-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 1.25rem;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 20px 40px -20px var(--shadow-color);
+}
+
+.glass-panel-strong {
+  background: var(--panel-glass-strong);
+  border: 1px solid var(--border-glass);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 24px 60px -24px var(--shadow-color);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  border-radius: 0.85rem;
+}
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(79, 142, 247, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---- Signature moment: completion shimmer, fires once, settles immediately ---- */
+@keyframes completion-shimmer {
+  0% {
+    box-shadow: 0 0 0 0 rgba(63, 184, 138, 0.0), 0 1px 0 rgba(255,255,255,0.06) inset, 0 20px 40px -20px var(--shadow-color);
+  }
+  35% {
+    box-shadow: 0 0 0 3px rgba(63, 184, 138, 0.35), 0 0 42px 6px rgba(63, 184, 138, 0.28), 0 1px 0 rgba(255,255,255,0.06) inset, 0 20px 40px -20px var(--shadow-color);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(63, 184, 138, 0.0), 0 1px 0 rgba(255,255,255,0.06) inset, 0 20px 40px -20px var(--shadow-color);
+  }
+}
+.animate-completion-shimmer {
+  animation: completion-shimmer 900ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+/* ---- Up Next glow (appointment starting soon) ---- */
+@keyframes up-next-glow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--glow-color, rgba(79,142,247,0.35)), 0 0 22px 2px var(--glow-color, rgba(79,142,247,0.22)); }
+  50% { box-shadow: 0 0 0 1px var(--glow-color, rgba(79,142,247,0.5)), 0 0 34px 6px var(--glow-color, rgba(79,142,247,0.34)); }
+}
+.up-next-glow {
+  --glow-color: rgba(201, 154, 60, 0.4);
+  animation: up-next-glow 2.6s ease-in-out infinite;
+}
+.up-next-glow-urgent {
+  --glow-color: rgba(224, 101, 79, 0.5);
+  animation: up-next-glow 1.5s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

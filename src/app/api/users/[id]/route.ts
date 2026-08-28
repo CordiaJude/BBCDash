@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getSession } from "@/lib/auth";
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session || session.role !== "manager") {
+    return NextResponse.json({ error: "Manager access required." }, { status: 403 });
+  }
+  const { id } = await params;
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+
+  const update: Record<string, unknown> = {};
+  if (typeof body.display_name === "string" && body.display_name.trim()) {
+    update.display_name = body.display_name.trim();
+  }
+  if (body.role === "rep" || body.role === "manager") update.role = body.role;
+  if (typeof body.active === "boolean") update.active = body.active;
+  if (typeof body.pin === "string") {
+    if (!/^\d{4}$/.test(body.pin)) {
+      return NextResponse.json({ error: "PIN must be exactly 4 digits." }, { status: 400 });
+    }
+    update.pin_hash = await bcrypt.hash(body.pin, 10);
+  }
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("users")
+    .update(update)
+    .eq("id", id)
+    .select("id, username, display_name, role, color_hex, photo_url, active, created_at")
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ rep: data });
+}
