@@ -1199,3 +1199,299 @@ have.
 - `npx tsc --noEmit` — clean, no errors (no code changes were made this
   pass, so this reconfirms the pre-existing clean baseline).
 - `npx eslint .` — clean, no warnings or errors (same).
+
+## Design Direction Change — Flat Minimal System
+
+A full visual-system replacement, requested after Phases 2–4 shipped: the
+"liquid glass" aesthetic (frosted/translucent panels, `backdrop-filter`
+blur, squircle radii, TV ambient background, login tilt) is **replaced
+outright** by a flat, opaque, minimal system matching a specific reference
+("Today's Dashboard": light cool-gray page, an opaque white content card
+with a soft low-opacity shadow, an icon-only sidebar, a clean table with
+icon-labeled columns and tri-state status circles). This is a
+structural/visual rewrite, not an addition on top of the glass system —
+every glass token and every card-grid appointment list was replaced. No
+business logic, data fetching, Supabase query, or auth code was touched
+except the one explicitly-flagged item under "Status-circle decision"
+below, and that item required **no schema change**.
+
+### What replaced what
+
+| Old (Phases 2–4) | New (this pass) |
+|---|---|
+| `.glass-panel` / `.glass-panel-strong` / `.glass-panel-tv` (translucent fill, `backdrop-filter: blur(20–30px) saturate(...)`, squircle radius) | `.panel` / `.panel-strong` / `.panel-tv` — fully opaque `var(--panel)` (white in light mode), 1px solid border, soft wide low-opacity shadow, **no `backdrop-filter` anywhere in the codebase** (verified: `grep -rn backdrop-filter\|backdrop-blur src/` returns zero CSS hits) |
+| `.glass-input` (translucent fill, blur-adjacent) | `.field` — opaque `var(--panel-alt)` fill, solid border, moderate radius |
+| `.glass-icon-btn` | `.icon-btn` — opaque, same 44×44px min touch target, moderate radius |
+| `.glass-hover` | `.hover-surface` — unchanged mechanism (a hover background swap), renamed for honesty since it no longer touches a glass surface |
+| Top horizontal `Nav.tsx` bar (glass pill, text-label tabs, shown only on `/dashboard` via `dashboard/layout.tsx` — **`/admin` had no navigation chrome at all**, a pre-existing gap this pass also fixes) | `Sidebar.tsx` (desktop, icon-only, vertical) + `BottomNav.tsx` (mobile, pill bar with raised center "+") + `AppShell.tsx` (composes both plus the one big opaque white content panel), now wired into **both** `dashboard/layout.tsx` and a new `admin/layout.tsx` — `Nav.tsx` deleted |
+| `AppointmentCard.tsx` used everywhere (rep dashboard, TV single-list, TV per-rep/per-status columns) as a card-grid | New `AppointmentRow.tsx` (flat table row, icon+label header) used for the rep dashboard and TV's single-list view; `AppointmentCard.tsx` **kept** but restyled flat/opaque, still used only for TV's per-rep/per-status column layouts, where a 7-column table header doesn't fit a ~240px-wide column — see "Table restructuring" below for why this was a dedicated new component rather than a "mode" on the card |
+| `StatusToggle.tsx`: colored-tint chip (green/red inset ring + dot/check/X) | Flat tri-state circle: empty gray-outline / solid green + white check / blue-outline + blue "?" — see "Status-circle decision" below |
+| TV ambient background (`.tv-ambient-bg`, three blurred drifting radial-gradient shapes, `TvBoard.tsx`) | **Removed entirely** — see "What was removed" below |
+| Modal `bg-black/50 backdrop-blur-sm` scrim + `.glass-panel-strong` dialog | `bg-black/45` scrim (no blur) + `.panel-strong` opaque dialog — same `modal-panel-in/out` perspective-tip keyframes from Phase 4, now animating an opaque surface instead of a glass one |
+| Login panel: `.glass-panel-strong` | `.panel-strong`, same `login-panel-enter`/`login-panel-tilt` 3D accents kept (a transform effect, independent of panel material) |
+
+### New token system (`src/app/globals.css`)
+
+Light (default): `--background:#F5F6F8` (flat, no gradient — the previous
+Phase 2 warm-gradient / Phase 2.1 flat-white body rules are both gone),
+`--panel:#FFFFFF`, `--panel-alt:#F7F8FA`, `--foreground:#16181C`,
+`--foreground-muted:#52565C`, `--foreground-faint:#6B7078`,
+`--border:#E5E7EB`, `--border-strong:#D8DBE0`, `--accent:#3568D4`,
+`--accent-soft:#EEF4FE` (soft-blue active-nav/pill highlight),
+`--ok:#167A4C` / `--ok-icon:#FFFFFF` (checkmark-on-fill color, themed
+separately — see contrast table), `--bad:#B8391F`,
+`--pending-outline:#6B7078`. Radius scale: `--radius-lg:1.5rem` (24px —
+main panel, sidebar, modal, bottom-nav bar), `--radius-md:0.875rem` (14px
+— rows, inputs, icon buttons; visibly smaller/"moderate" against the
+panel's large radius, per spec). Shadow: `--shadow` / `--shadow-strong`
+are both low-alpha (`rgba(20,24,32,0.10–0.16)`) but wide-spread
+(`0 24px 60px -28px`), producing the "large, soft, low-opacity" floating
+card look rather than a heavy dark drop shadow. `.panel-tv` adds a
+slightly firmer border/shadow for the TV surface specifically (edge
+definition from ~10ft — even an opaque white panel is only ~1.08:1
+luminance-different from the `#F5F6F8` page behind it, so the border +
+shadow, not color contrast, is what defines its edge; see contrast table).
+
+Dark mode (`prefers-color-scheme`/`data-theme="dark"`, both blocks kept in
+sync per the existing theme-aware contract): same flat-opaque approach,
+not a parallel glass system — `--background:#0B0D12`, `--panel:#171A21`,
+etc. One deliberate loss: Phase 2's dark-mode radial-gradient body wash
+(`rgba(90,120,200,...)` etc.) is also removed, since "no gradient, no
+warmth" was specified as a system-wide direction, not a light-mode-only
+one — dark mode is now flat `var(--background)` too.
+
+### Nav restructuring
+
+- **`Sidebar.tsx`** (new): desktop-only (`hidden sm:flex`) vertical
+  icon-only nav inside a `.sidebar` panel (same large radius/shadow as the
+  main content panel). Generous `gap-6` between icons. Active route gets
+  `.sidebar-icon-active` (soft `--accent-soft` rounded-square, accent-blue
+  icon). Tabs are generated by `NAV_ITEMS(role)` — Dashboard, Admin
+  (manager-only, exactly the same `role === "manager"` gate the old
+  `Nav.tsx` used), TV Display — plus a logout icon pinned to the bottom.
+  Icon-only buttons carry `title`/`aria-label` for accessibility since
+  there's no visible text label.
+- **`BottomNav.tsx`** (new): mobile-only (`sm:hidden`) pill bar, fixed to
+  the bottom of the viewport, built from the same `NAV_ITEMS(role)` split
+  around a raised center `.bottom-nav-fab` ("+"). Active item gets
+  `.bottom-nav-item-active` (same soft-blue pill treatment as the
+  sidebar). A logout item is appended so mobile users have a way to sign
+  out without the desktop sidebar's dedicated logout icon.
+- **`AppShell.tsx`** (new): composes `Sidebar` + the one big `.panel`
+  content card + `BottomNav` around `{children}`. Used by
+  **both** `src/app/dashboard/layout.tsx` (updated) and a **new**
+  `src/app/admin/layout.tsx` — the admin route previously rendered with
+  **zero** navigation chrome (`AdminBoard.tsx` had no `Nav` and no back
+  link anywhere; confirmed via `grep` before this pass), so this also
+  fixes that pre-existing gap rather than just restyling something that
+  was already there. `TvPage` and `login/page.tsx` deliberately stay
+  outside `AppShell` — TV remains a standalone read-only display with no
+  nav (matching its existing architecture, see below), and login is a
+  single centered card, as before.
+- Role-based visibility was **not changed**, only re-hosted: `NAV_ITEMS`
+  gates the Admin entry on `user.role === "manager"`, identical to the old
+  `Nav.tsx` condition, and the server-side redirects in `admin/page.tsx`
+  (now duplicated defensively in the new `admin/layout.tsx`, matching the
+  existing `dashboard/layout.tsx` + `dashboard/page.tsx` pattern of
+  re-checking session at both levels) are untouched.
+- The mobile "+" FAB (`BottomNav`) links to `/dashboard?add=1` rather than
+  calling a handler directly, since it must work from any page including
+  ones that don't own the modal's state. `DashboardBoard` reads that query
+  param on mount (via `window.location.search`, not `useSearchParams`, to
+  avoid a `Suspense` boundary requirement) and opens the **existing**
+  add-appointment flow (`setEditing(null); setModalOpen(true)`) — the same
+  state transition the desktop header's "+" button calls locally — then
+  strips the param via `router.replace`. No new appointment-creation logic
+  was added; this is purely a second, page-independent trigger for a flow
+  that already existed.
+
+### Table restructuring
+
+The rep dashboard's card-grid (`AppointmentCard` list in
+`DashboardBoard.tsx`) is replaced by a genuine table: a new
+`AppointmentTableHeader` (icon+label columns — calendar/Appt Date,
+clock/Appt Time, person/Name, car/Vehicle, plus three status columns) and
+`AppointmentRow.tsx` (one flat row per appointment: date, time,
+name+rep-line, vehicle+link-buttons, three status circles), with a thin
+2–3px colored left-edge bar (`.rep-edge-bar`) as the **only** rep-color
+accent — no colored text, no tinted row background anywhere. Row height/
+padding is generous (`0.875rem` vertical + icon-sized 36px status
+circles), dividers are a single 1px `var(--border)` line between rows
+(`border-bottom`, last row's suppressed), radius on the row corners is the
+**moderate** `--radius-md` token, distinctly smaller than the panel's
+`--radius-lg`, per spec. The table sits in a horizontally-scrolling
+container (`overflow-x-auto`, `min-w-[760px]` inner wrapper) since 7
+columns don't reflow to a phone width without breaking the "table" shape —
+mobile users primarily navigate via `BottomNav` instead.
+
+**Decision: dedicated row component, not a "flat mode" on `AppointmentCard`.**
+A table row (one horizontal line of grid columns) and a card (a vertical
+stack with wrapping secondary content) share very little markup — forcing
+both shapes through one component via a pile of conditionals would have
+been messier than two small, single-purpose components. `AppointmentCard`
+was kept (restyled flat/opaque, no `backdrop-filter`, no glow bloom) for
+exactly one remaining job: TV's `columns_per_rep`/`columns_by_status`
+layouts, where each column is only ~240px wide and a 7-column table header
+would not fit. TV's `single_list` layout, which really is one continuous
+list, was switched to `AppointmentTableHeader` + `AppointmentRow` inside a
+`.panel.panel-tv` wrapper, same as the rep dashboard.
+
+**`AdminBoard.tsx` note:** the instructions describe restyling the "rep
+dashboard / admin appointment list" table. On inspection, `AdminBoard.tsx`
+has **never rendered an appointment list** — it only ever composed `Recap`
+(stats), `TvControls`, and `UserManagement`; managers browse/edit/delete
+*all* appointments through the same `DashboardBoard` component in
+"Everyone" scope (confirmed in the Phase 0/1 audit: `canEditAll`/delete
+gating there is already manager-aware). So there is exactly one real
+appointment table in the app, and restyling it once (in `DashboardBoard`)
+covers both the "rep dashboard" and "admin appointment list" bullets — a
+second, duplicate table was **not** added to `AdminBoard`, since that
+would be new functionality/surface the instructions didn't ask for and
+the constraints explicitly discourage. `AdminBoard` did get a bold
+left-aligned "Admin" page title (matching the header-row typographic
+pattern elsewhere) and its three sections were un-nested from their own
+individual `.glass-panel` wrappers into plain bordered sections, since
+they now already live inside `AppShell`'s one big white card and a
+white-panel-inside-a-white-panel would have contradicted "a single opaque
+white card."
+
+### Status-circle decision: reused the existing tri-state field, no schema change
+
+`src/lib/types.ts`'s `TriState = "pending" | "yes" | "no"` is **already** a
+genuine three-value field (not binary) for each of
+`confirmed_status`/`showed_status`/`sold_status`, confirmed by re-reading
+`StatusToggle.tsx`'s pre-existing `pending → yes → no → pending` cycle and
+the Phase 0/1 audit notes. This is exactly the "(a) reuse something that
+already exists" path the instructions asked to prefer — **no new column,
+no migration file, no schema change of any kind** was made or needed.
+
+Mapping onto the reference's three visual states:
+- `pending` (untouched) → **empty, gray-outline circle** ("not yet")
+- `yes` → **solid green circle, white checkmark** ("done")
+- `no` → **blue-outline circle, blue "?"** (this field's other resolved
+  value)
+
+The one honest nuance, called out explicitly rather than glossed over:
+the old design rendered `"no"` as a red/rejected state (colored red ring +
+X glyph), and the reference's blue-outline-"?" visual is described as a
+"pending/uncertain" state, not a "resolved-negative" one. Reusing the
+existing field means `"no"` now gets the blue-question treatment instead
+of a red-reject treatment — a **visual** reinterpretation of an existing
+value, not a new value. This was the deliberate trade-off per the
+instructions' explicit preference for reusing existing state over adding
+a new database column; it is called out here so it isn't mistaken for an
+oversight. `StatusToggle`'s cycle order, persistence path (`onChange` →
+the same field-level PATCH as before), and the underlying data are all
+otherwise byte-for-byte unchanged.
+
+### What was removed (and why)
+
+- **TV ambient background layer** (`.tv-ambient-bg`, three blurred
+  drifting radial-gradient shapes + their keyframes, and the wrapping
+  `<div className="tv-ambient-bg">`/`<div className="relative z-10">` in
+  `TvBoard.tsx`) — **removed outright**, not kept "just in case." It was
+  built in Phase 4 specifically to add faint depth *visible through* a
+  translucent glass panel; an opaque white table has nothing translucent
+  for it to show through, so keeping it would only add three softly
+  glowing circles floating on bare gray page background behind (and now
+  fully hidden by) an opaque board — pure visual noise with zero payoff
+  under the new material. `TvBoard.tsx`'s outer markup was simplified
+  back to a single `min-h-dvh` wrapper now that the extra stacking-context
+  layer serves no purpose.
+- **`backdrop-filter`/`backdrop-blur` everywhere** — every instance
+  (panel blur, modal scrim blur, TV sound-unlock overlay blur) removed;
+  verified via `grep -rn "backdrop-blur\|backdrop-filter" src/` returning
+  zero CSS/class hits (only a prose mention in a comment).
+- **Colored glow bleed on `RepAvatar`** (`0 2px 8px -2px ${color}66`
+  drop-shadow) — simplified to a plain white-inset-ring + solid-color ring
+  with no soft color bloom, consistent with "keep the rest of the palette
+  strictly black/white/gray/blue-accent" — the avatar ring itself is the
+  one legitimate per-rep color marker (an identity ring, not text or a
+  panel tint), but the extra glow was decorative bling inconsistent with
+  "flat, minimal."
+- **Dark-mode atmospheric gradient body background** (Phase 2's
+  multi-stop `radial-gradient` wash, still present in dark mode as of
+  Phase 2.1) — removed for the same "no gradient, no warmth" reasoning
+  applied consistently to both themes, not just light mode.
+- Kept, deliberately, because they're transform/timing accents
+  independent of the (now-gone) glass material rather than part of it:
+  the login panel's pointer-tilt + perspective mount entrance
+  (`login-panel-tilt`/`login-panel-enter`), the modal's perspective-tip
+  scale+fade (`modal-panel-in/out`), the empty-state float
+  (`empty-state-icon`), the FLIP reorder, the sold shimmer, the up-next
+  glow, and the TV layout cross-fade — all from Phases 3/4, all still
+  wired to the same hooks (`usePrefersReducedMotion`, `useFlipAnimation`,
+  `useSoldShimmer`), now animating/gating opaque surfaces instead of
+  glass ones.
+
+### WCAG AA contrast — flat system (all pairs computed against actual
+opaque hex values; no compositing math needed since nothing is translucent
+anymore)
+
+Method: WCAG relative-luminance formula, ratio = (L1+0.05)/(L2+0.05),
+verified with a small Node script rather than by eye.
+
+| Foreground | Background | Ratio | Requirement | Result |
+|---|---|---|---|---|
+| `--foreground` #16181C | page `#F5F6F8` | 16.44:1 | 4.5:1 (body text) | Pass |
+| `--foreground` #16181C | panel `#FFFFFF` | 17.77:1 | 4.5:1 | Pass |
+| `--foreground-muted` #52565C | panel `#FFFFFF` | 7.38:1 | 4.5:1 | Pass |
+| `--foreground-faint` #6B7078 | panel `#FFFFFF` | 4.98:1 | 4.5:1 | Pass |
+| `--foreground-faint` #6B7078 | page `#F5F6F8` | 4.61:1 | 4.5:1 | Pass |
+| `--accent` #3568D4 | panel `#FFFFFF` | 5.14:1 | 4.5:1 (text/links) | Pass |
+| `--accent` #3568D4 | page `#F5F6F8` | 4.76:1 | 4.5:1 | Pass |
+| white `#FFFFFF` | `--accent` #3568D4 (Save/+ buttons) | 5.14:1 | 4.5:1 | Pass |
+| `--bad` #B8391F | panel `#FFFFFF` (error text, delete link) | 5.76:1 | 4.5:1 | Pass |
+| `--ok` #167A4C | panel `#FFFFFF` | 5.35:1 | 3:1 (icon/graphic) | Pass |
+| `--ok-icon` white `#FFFFFF` | `--ok` fill #167A4C (status circle checkmark) | 5.35:1 | 3:1 (icon) | Pass |
+| `--pending-outline` #6B7078 (empty-circle ring) | panel `#FFFFFF` | 4.98:1 | 3:1 (non-text UI boundary, WCAG 1.4.11) | Pass, well over threshold |
+| `--accent` #3568D4 ("?" glyph + sidebar/pill active icon) | `--accent-soft` #EEF4FE | 4.66:1 | 3:1 (icon) | Pass |
+| dark `--foreground` #ECEEF2 | dark panel `#171A21` | 14.99:1 | 4.5:1 | Pass |
+| dark `--foreground-muted` #9CA3AF | dark panel `#171A21` | 6.86:1 | 4.5:1 | Pass |
+| dark `--foreground-faint` #7D8590 | dark panel `#171A21` | 4.67:1 | 4.5:1 | Pass |
+| dark `--accent` #6FA0FF | dark panel `#171A21` | 6.76:1 | 4.5:1 | Pass |
+| dark `--accent` on dark `--accent-soft` chip (composited `rgba(111,160,255,0.16)` over `#171A21` → `#252F45`) | — | 5.19:1 | 3:1 (icon) | Pass |
+| dark `--bad` #FF8368 | dark panel `#171A21` | 7.21:1 | 4.5:1 | Pass |
+| dark `--ok-icon` (dark bg tone, **not white**) on dark `--ok` fill #4FD39F | — | 9.24:1 | 3:1 (icon) | Pass — **note**: white-on-`#4FD39F` was checked and measured only **1.88:1** (fail), so dark mode's checkmark color is themed to the dark background tone instead of a hardcoded white; this is why `--ok-icon` is a themed token, not a literal `#fff` in the CSS |
+
+Decorative-only elements (rep-color edge bars/dots, row dividers, panel-
+vs-page luminance separation) were not held to a text/icon threshold since
+WCAG doesn't require contrast for pure decoration backed by other cues
+(here: spacing + a 1px border) — consistent with how the prior phases
+treated rep-color accents.
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors.
+- `npx eslint .` — clean, no warnings or errors (one
+  `react-hooks/set-state-in-effect` violation was caught and fixed in
+  `DashboardBoard.tsx`'s new `?add=1` effect — deferred the `setState`
+  calls through a cleaned-up `setTimeout(..., 0)`, the same pattern Phase
+  3 used elsewhere, rather than suppressed).
+- `npx next build` — succeeded in full; all routes still `ƒ` (dynamic)
+  except `/login` and `/_not-found`, matching Phase 5's finding that no
+  route prerenders against Supabase at build time, so the sandbox's
+  Supabase network block does not affect this result.
+- `.env.local` reconfirmed untracked/gitignored (`git check-ignore -v`)
+  and `git status --porcelain` shows no env file staged.
+
+### Not addressed / explicitly out of scope this pass
+
+- No live visual QA — this sandbox still has no Supabase network route
+  and cannot run `npm run dev`, so the "matches the reference image"
+  judgment is based on the written structural description only, per the
+  task's own caveat, not an actual side-by-side screenshot comparison.
+- The bottom-nav's mobile "+" reaching the add-modal via a `/dashboard?add=1`
+  navigation (rather than a shared context/store) is a pragmatic choice
+  documented above, not the only possible architecture — flagging it in
+  case a future pass wants a more direct cross-component trigger.
+- The header's search affordance is a small, genuinely new but
+  intentionally minimal addition: a client-side substring filter over the
+  *already-fetched* `appointments` array (customer name / vehicle), no new
+  API call, query, or data-fetching path. Flagged explicitly since the
+  task asked business-logic additions to be called out even when small.
+- The date-selector pill is wired to the app's existing "My appointments" /
+  "Everyone" scope toggle (a native `<select>` styled as a pill) rather
+  than a real per-day filter, since no per-day filtering exists anywhere
+  in the data layer and adding one was out of this pass's scope — noted
+  above under "Header, date selector."

@@ -18,14 +18,14 @@ export function Recap({ appointments }: { appointments: Appointment[] }) {
   }, [appointments, date]);
 
   return (
-    <div className="glass-panel p-4 sm:p-5">
+    <div className="pb-6 border-b border-[var(--border)]">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-headline text-lg">Recap</h2>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="glass-input px-3 py-1.5 text-sm tabular"
+          className="field px-3 py-1.5 text-sm tabular"
         />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -41,7 +41,7 @@ export function Recap({ appointments }: { appointments: Appointment[] }) {
 
 function Stat({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
   return (
-    <div className="glass-input p-3 text-center">
+    <div className="field p-3 text-center">
       <div className={`text-2xl font-semibold tabular ${accent ? "text-[var(--accent)]" : ""}`}>{value}</div>
       <div className="text-xs text-[var(--foreground-muted)] mt-0.5">{label}</div>
     </div>

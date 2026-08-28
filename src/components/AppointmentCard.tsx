@@ -16,6 +16,14 @@ export function upNextGlowClass(appt: Pick<Appointment, "appt_date" | "appt_time
   return mins <= 15 ? "up-next-glow-urgent" : "up-next-glow";
 }
 
+/**
+ * Compact card presentation, kept specifically for TV's per-rep and
+ * per-status column layouts (a wide table header doesn't fit a narrow
+ * grid column). The rep dashboard and TV's single-list view use the flat
+ * table rendering in AppointmentRow.tsx instead — see that file's header
+ * comment for why this stayed a separate component rather than a "mode"
+ * on this one.
+ */
 export function AppointmentCard({
   appt,
   rep,
@@ -41,26 +49,21 @@ export function AppointmentCard({
   tv?: boolean;
 }) {
   const glow = upNextGlowClass(appt, now);
-  const accent = rep?.color_hex ?? "#948b80";
+  const accent = rep?.color_hex ?? "#8a9099";
 
   return (
     <div
       onClick={onClick}
       className={clsx(
-        "glass-panel relative overflow-hidden transition-transform",
-        tv && "glass-panel-tv",
+        "panel relative overflow-hidden",
+        tv && "panel-tv",
         tv ? "p-4 sm:p-5" : "p-3 sm:p-4",
-        onClick && "cursor-pointer hover:-translate-y-0.5",
+        onClick && "cursor-pointer",
         glow,
         shimmer && "animate-completion-shimmer",
-        hasConflict && "ring-2 ring-[var(--bad)]/55"
+        hasConflict && "ring-2 ring-[var(--bad)]/50"
       )}
-      style={{
-        borderLeft: `${tv ? 6 : 4}px solid ${accent}`,
-        boxShadow: tv
-          ? `-14px 0 26px -20px ${accent}, 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 32px -16px var(--shadow-color-tv)`
-          : `-14px 0 26px -22px ${accent}, 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color)`,
-      }}
+      style={{ borderLeft: `${tv ? 5 : 4}px solid ${accent}` }}
     >
       {hasConflict && (
         <span className={clsx("absolute top-2 right-2 text-[var(--bad)]", tv ? "text-sm font-bold uppercase tracking-wide" : "text-label")}>

@@ -68,7 +68,7 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
   }
 
   return (
-    <div className="glass-panel p-4 sm:p-5">
+    <div className="pt-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-headline text-lg">Reps & managers</h2>
         <button
@@ -80,28 +80,28 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
       </div>
 
       {showAdd && (
-        <div className="glass-input p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="field p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
-            className="glass-input px-3 py-2"
+            className="field px-3 py-2"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
           <input
-            className="glass-input px-3 py-2"
+            className="field px-3 py-2"
             placeholder="Display name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
           <input
-            className="glass-input px-3 py-2 tabular"
+            className="field px-3 py-2 tabular"
             placeholder="4-digit PIN"
             inputMode="numeric"
             maxLength={4}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
           />
-          <select className="glass-input px-3 py-2" value={role} onChange={(e) => setRole(e.target.value as "rep" | "manager")}>
+          <select className="field px-3 py-2" value={role} onChange={(e) => setRole(e.target.value as "rep" | "manager")}>
             <option value="rep">Rep</option>
             <option value="manager">Manager</option>
           </select>
@@ -118,7 +118,7 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
 
       <div className="space-y-2">
         {reps.map((r) => (
-          <div key={r.id} className="glass-input flex items-center justify-between gap-3 p-3">
+          <div key={r.id} className="field flex items-center justify-between gap-3 p-3">
             <div className="flex items-center gap-3 min-w-0">
               <button onClick={() => fileInputs.current[r.id]?.click()} title="Change photo">
                 <RepAvatar rep={r} size={36} />
@@ -146,12 +146,12 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => resetPin(r)} className="glass-input px-2.5 py-1.5 text-xs hover:bg-[var(--hover-tint-strong)]">
+              <button onClick={() => resetPin(r)} className="field px-2.5 py-1.5 text-xs hover:bg-[var(--hover-surface-strong)]">
                 Reset PIN
               </button>
               <button
                 onClick={() => toggleActive(r)}
-                className="glass-input px-2.5 py-1.5 text-xs hover:bg-[var(--hover-tint-strong)]"
+                className="field px-2.5 py-1.5 text-xs hover:bg-[var(--hover-surface-strong)]"
               >
                 {r.active ? "Deactivate" : "Reactivate"}
               </button>

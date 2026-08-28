@@ -1,79 +1,83 @@
 @import "tailwindcss";
 
 /*
-  Liquid Glass design tokens.
-  Phase 2.1: base theme is bright, clean white — the feel of a whiteboard's
-  surface — not the warm atmospheric off-white Phase 2 shipped. Frosted
-  panels keep their blur/border/shadow identity but with a lighter, less
-  colored tint so the overall impression stays crisp rather than hazy.
-  Rep colors and status accents stay fully saturated against the brighter
-  base — only the neutrals were desaturated/brightened. Dark-mode values
-  are kept for `prefers-color-scheme`/explicit toggle support even though
-  the app ships light-first, per the theme-aware requirement.
+  Flat Minimal design tokens (replaces the Phase 2/2.1 "liquid glass" system).
+  Structure: a light, opaque, cool-gray page background with fully opaque
+  white surfaces (main content panel, sidebar, modal, TV board) that float
+  above it on a soft, low-opacity shadow — no backdrop-filter, no
+  translucent fills anywhere. Radii are large and consistent on panels/
+  the sidebar, moderate on rows/buttons/inputs. Dark-mode values follow the
+  same flat-opaque approach (never translucent/blurred) so the theme-aware
+  contract from earlier phases still holds in both directions.
 */
 :root {
-  --background: #ffffff;
-  --background-alt: #f7f7f8;
-  --background-elevated: #ffffff;
+  --background: #f5f6f8;
+  --panel: #ffffff;
+  --panel-alt: #f7f8fa;
   --foreground: #16181c;
   --foreground-muted: #52565c;
-  --foreground-faint: #4b4f55;
-  --border-glass: rgba(20, 20, 26, 0.09);
-  --border-glass-strong: rgba(20, 20, 26, 0.15);
-  --panel-glass: rgba(255, 255, 255, 0.72);
-  --panel-glass-strong: rgba(255, 255, 255, 0.85);
-  --hover-tint: rgba(20, 20, 26, 0.045);
-  --hover-tint-strong: rgba(20, 20, 26, 0.08);
-  --shadow-color: rgba(20, 20, 26, 0.09);
-  --shadow-color-tv: rgba(20, 20, 26, 0.20);
+  --foreground-faint: #6b7078;
+  --border: #e5e7eb;
+  --border-strong: #d8dbe0;
+  --hover-surface: #eff1f4;
+  --hover-surface-strong: #e7e9ed;
   --accent: #3568d4;
+  --accent-soft: #eef4fe;
   --ok: #167a4c;
+  --ok-icon: #ffffff;
   --bad: #b8391f;
-  --pending-fg: #4b4f55;
+  --pending-outline: #6b7078;
+  --shadow: rgba(20, 24, 32, 0.10);
+  --shadow-strong: rgba(20, 24, 32, 0.16);
+  --shadow-tv: rgba(20, 24, 32, 0.22);
+  --radius-lg: 1.5rem;
+  --radius-md: 0.875rem;
 }
 
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --background: #0b0f17;
-    --background-alt: #0e1320;
-    --background-elevated: #10141f;
-    --foreground: #e9edf5;
-    --foreground-muted: #9aa2b6;
-    --foreground-faint: #6f7791;
-    --border-glass: rgba(255, 255, 255, 0.10);
-    --border-glass-strong: rgba(255, 255, 255, 0.16);
-    --panel-glass: rgba(255, 255, 255, 0.06);
-    --panel-glass-strong: rgba(255, 255, 255, 0.10);
-    --hover-tint: rgba(255, 255, 255, 0.06);
-    --hover-tint-strong: rgba(255, 255, 255, 0.10);
-    --shadow-color: rgba(0, 0, 0, 0.45);
-    --shadow-color-tv: rgba(0, 0, 0, 0.55);
+    --background: #0b0d12;
+    --panel: #171a21;
+    --panel-alt: #1d2029;
+    --foreground: #eceef2;
+    --foreground-muted: #9ca3af;
+    --foreground-faint: #7d8590;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --hover-surface: rgba(255, 255, 255, 0.06);
+    --hover-surface-strong: rgba(255, 255, 255, 0.10);
     --accent: #6fa0ff;
+    --accent-soft: rgba(111, 160, 255, 0.16);
     --ok: #4fd39f;
+    --ok-icon: #0b0d12;
     --bad: #ff8368;
-    --pending-fg: #8b93a7;
+    --pending-outline: #7d8590;
+    --shadow: rgba(0, 0, 0, 0.45);
+    --shadow-strong: rgba(0, 0, 0, 0.55);
+    --shadow-tv: rgba(0, 0, 0, 0.6);
   }
 }
 
 :root[data-theme="dark"] {
-  --background: #0b0f17;
-  --background-alt: #0e1320;
-  --background-elevated: #10141f;
-  --foreground: #e9edf5;
-  --foreground-muted: #9aa2b6;
-  --foreground-faint: #6f7791;
-  --border-glass: rgba(255, 255, 255, 0.10);
-  --border-glass-strong: rgba(255, 255, 255, 0.16);
-  --panel-glass: rgba(255, 255, 255, 0.06);
-  --panel-glass-strong: rgba(255, 255, 255, 0.10);
-  --hover-tint: rgba(255, 255, 255, 0.06);
-  --hover-tint-strong: rgba(255, 255, 255, 0.10);
-  --shadow-color: rgba(0, 0, 0, 0.45);
-  --shadow-color-tv: rgba(0, 0, 0, 0.55);
+  --background: #0b0d12;
+  --panel: #171a21;
+  --panel-alt: #1d2029;
+  --foreground: #eceef2;
+  --foreground-muted: #9ca3af;
+  --foreground-faint: #7d8590;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --hover-surface: rgba(255, 255, 255, 0.06);
+  --hover-surface-strong: rgba(255, 255, 255, 0.10);
   --accent: #6fa0ff;
+  --accent-soft: rgba(111, 160, 255, 0.16);
   --ok: #4fd39f;
+  --ok-icon: #0b0d12;
   --bad: #ff8368;
-  --pending-fg: #8b93a7;
+  --pending-outline: #7d8590;
+  --shadow: rgba(0, 0, 0, 0.45);
+  --shadow-strong: rgba(0, 0, 0, 0.55);
+  --shadow-tv: rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {
@@ -84,7 +88,7 @@
 }
 
 * {
-  border-color: var(--border-glass);
+  border-color: var(--border);
 }
 
 html {
@@ -98,21 +102,11 @@ html {
 }
 
 body {
-  /* Bright, clean white base — no warm atmospheric gradient in light mode. */
+  /* Flat, opaque, cool-gray ground. No gradient, no warmth. */
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   min-height: 100dvh;
-}
-:root[data-theme="dark"] body,
-:root:not([data-theme="light"]) body {
-  @media (prefers-color-scheme: dark) {
-    background:
-      radial-gradient(1100px 750px at 12% -8%, rgba(90, 120, 200, 0.14), transparent 60%),
-      radial-gradient(1000px 700px at 108% 6%, rgba(120, 150, 220, 0.10), transparent 55%),
-      radial-gradient(1400px 900px at 50% 120%, rgba(60, 80, 140, 0.12), transparent 60%),
-      var(--background);
-  }
 }
 
 .tabular {
@@ -138,87 +132,57 @@ body {
   color: var(--foreground-faint);
 }
 
-/* ---- Glass panel system (squircle radii, frosted fill, diffused elevation) ---- */
-.glass-panel {
-  background: var(--panel-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: 1.75rem;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 20px 44px -22px var(--shadow-color);
+/* ---- Flat opaque panel system ----
+   Solid white (or dark-panel) surfaces floating on the gray page background
+   via a soft, low-opacity, wide shadow — never a blur/translucency effect.
+   Large, consistent radius across the main content panel and the sidebar. */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px -28px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
 }
 
-.glass-panel-strong {
-  background: var(--panel-glass-strong);
-  border: 1px solid var(--border-glass);
-  border-radius: 2rem;
-  backdrop-filter: blur(30px) saturate(170%);
-  -webkit-backdrop-filter: blur(30px) saturate(170%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 28px 64px -26px var(--shadow-color);
-}
-:root[data-theme="dark"] .glass-panel,
-:root:not([data-theme="light"]) .glass-panel {
-  @media (prefers-color-scheme: dark) {
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 20px 40px -20px var(--shadow-color);
-  }
-}
-:root[data-theme="dark"] .glass-panel-strong,
-:root:not([data-theme="light"]) .glass-panel-strong {
-  @media (prefers-color-scheme: dark) {
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 24px 60px -24px var(--shadow-color);
-  }
+.panel-strong {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 32px 80px -32px var(--shadow-strong), 0 4px 12px -4px var(--shadow);
 }
 
 /*
-  TV surface modifier: bright white panels edge-to-edge read as a flat void
-  from 10+ feet away, so the TV board gets a firmer hairline border and a
-  heavier (but still soft/neutral, never warm) shadow to hold panel shape
-  at a distance under bright showroom lighting.
+  TV surface modifier: a slightly firmer border + heavier shadow than the
+  desktop panel so panels hold their shape from ~10ft under bright showroom
+  lighting, even though (unlike the old glass system) there is no
+  translucency here to compensate for — this is just "give the big flat
+  white board a bit more edge definition at a distance."
 */
-.glass-panel-tv {
-  border-color: var(--border-glass-strong);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 14px 32px -16px var(--shadow-color-tv);
+.panel-tv {
+  border-color: var(--border-strong);
+  box-shadow: 0 20px 48px -24px var(--shadow-tv), 0 2px 8px -4px var(--shadow);
 }
 
-.glass-input {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid var(--border-glass);
-  border-radius: 1rem;
+.field {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
   color: var(--foreground);
 }
-.glass-input:focus {
+.field:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: rgba(255, 255, 255, 0.85);
-}
-:root[data-theme="dark"] .glass-input,
-:root:not([data-theme="light"]) .glass-input {
-  @media (prefers-color-scheme: dark) {
-    background: rgba(255, 255, 255, 0.04);
-  }
-}
-:root[data-theme="dark"] .glass-input:focus,
-:root:not([data-theme="light"]) .glass-input:focus {
-  @media (prefers-color-scheme: dark) {
-    background: rgba(255, 255, 255, 0.06);
-  }
+  border-color: var(--accent);
+  background: var(--panel);
 }
 
-.glass-hover {
+.hover-surface {
   transition: background-color 150ms ease;
 }
-.glass-hover:hover {
-  background: var(--hover-tint);
+.hover-surface:hover {
+  background: var(--hover-surface);
 }
 
-/* Icon glass button (link buttons, small round actions) — min 44x44 touch target */
-.glass-icon-btn {
+/* Icon button (link buttons, small round actions) — min 44x44 touch target, flat opaque */
+.icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -226,38 +190,215 @@ body {
   min-height: 2.75rem;
   min-width: 2.75rem;
   padding: 0.5rem 0.875rem;
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
   color: var(--foreground-muted);
   font-size: 0.75rem;
   font-weight: 600;
   transition: background-color 150ms ease, color 150ms ease, transform 100ms ease;
 }
-.glass-icon-btn:hover {
-  background: var(--hover-tint-strong);
+.icon-btn:hover {
+  background: var(--hover-surface-strong);
   color: var(--foreground);
 }
-.glass-icon-btn:active {
+.icon-btn:active {
   transform: scale(0.96);
 }
-:root[data-theme="dark"] .glass-icon-btn,
-:root:not([data-theme="light"]) .glass-icon-btn {
-  @media (prefers-color-scheme: dark) {
-    background: rgba(255, 255, 255, 0.05);
-  }
+
+/* Circular flat icon button (search, etc.) */
+.icon-btn-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--foreground-muted);
+  transition: background-color 150ms ease, color 150ms ease, transform 100ms ease;
+}
+.icon-btn-round:hover {
+  background: var(--hover-surface);
+  color: var(--foreground);
+}
+.icon-btn-round:active {
+  transform: scale(0.96);
 }
 
-/* ---- Signature moment: completion shimmer, fires once, settles immediately ---- */
+/* Solid accent circular button (the "+" add-appointment trigger) */
+.fab-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: filter 150ms ease, transform 100ms ease;
+}
+.fab-accent:hover {
+  filter: brightness(1.08);
+}
+.fab-accent:active {
+  transform: scale(0.94);
+}
+
+/* Pill-shaped selector (date selector: icon + text + chevron) */
+.pill-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ---- Sidebar (desktop, icon-only) ---- */
+.sidebar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px -28px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
+}
+.sidebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-md);
+  color: var(--foreground-faint);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.sidebar-icon:hover {
+  background: var(--hover-surface);
+  color: var(--foreground);
+}
+.sidebar-icon-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sidebar-icon-active:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---- Bottom nav (mobile, pill bar with a raised center "+") ---- */
+.bottom-nav-bar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 20px 44px -20px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  color: var(--foreground-faint);
+  font-size: 0.625rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.bottom-nav-item-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.bottom-nav-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 14px 28px -10px color-mix(in srgb, var(--accent) 60%, transparent);
+  transition: filter 150ms ease, transform 100ms ease;
+}
+.bottom-nav-fab:active {
+  transform: scale(0.94);
+}
+
+/* ---- Appointment table (rep dashboard / TV single-list) ---- */
+.appt-table-header {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0 1rem 0.625rem;
+  color: var(--foreground-faint);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.appt-row {
+  display: grid;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  border-bottom: 1px solid var(--border);
+  transition: background-color 150ms ease;
+}
+.appt-row:last-child {
+  border-bottom: none;
+}
+.appt-row.clickable {
+  cursor: pointer;
+}
+.appt-row.clickable:hover {
+  background: var(--panel-alt);
+}
+
+/* Rep color coding, table context: a thin colored left-edge bar only —
+   never colored text or a tinted panel. */
+.rep-edge-bar {
+  position: absolute;
+  left: 0;
+  top: 0.375rem;
+  bottom: 0.375rem;
+  width: 3px;
+  border-radius: 999px;
+}
+
+/* ---- Status circle (tri-state: empty / solid check / outlined "?") ---- */
+.status-circle {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 100ms ease;
+}
+.status-circle:active {
+  transform: scale(0.92);
+}
+
+/* ---- Signature moment: completion shimmer, fires once ---- */
 @keyframes completion-shimmer {
   0% {
-    box-shadow: 0 0 0 0 rgba(31, 143, 95, 0.0), 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color);
+    box-shadow: 0 0 0 0 rgba(22, 122, 76, 0), 0 24px 60px -28px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
   }
   35% {
-    box-shadow: 0 0 0 3px rgba(31, 143, 95, 0.35), 0 0 42px 6px rgba(31, 143, 95, 0.28), 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color);
+    box-shadow: 0 0 0 3px rgba(22, 122, 76, 0.32), 0 0 36px 4px rgba(22, 122, 76, 0.22), 0 24px 60px -28px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(31, 143, 95, 0.0), 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color);
+    box-shadow: 0 0 0 0 rgba(22, 122, 76, 0), 0 24px 60px -28px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
   }
 }
 .animate-completion-shimmer {
@@ -266,15 +407,15 @@ body {
 
 /* ---- Up Next glow (appointment starting soon) ---- */
 @keyframes up-next-glow {
-  0%, 100% { box-shadow: 0 0 0 1px var(--glow-color, rgba(53,104,212,0.35)), 0 0 22px 2px var(--glow-color, rgba(53,104,212,0.22)); }
-  50% { box-shadow: 0 0 0 1px var(--glow-color, rgba(53,104,212,0.5)), 0 0 34px 6px var(--glow-color, rgba(53,104,212,0.34)); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--glow-color, rgba(53,104,212,0.35)), 0 0 18px 1px var(--glow-color, rgba(53,104,212,0.20)); }
+  50% { box-shadow: 0 0 0 1px var(--glow-color, rgba(53,104,212,0.5)), 0 0 26px 3px var(--glow-color, rgba(53,104,212,0.30)); }
 }
 .up-next-glow {
   --glow-color: rgba(201, 140, 30, 0.45);
   animation: up-next-glow 2.6s ease-in-out infinite;
 }
 .up-next-glow-urgent {
-  --glow-color: rgba(200, 64, 42, 0.5);
+  --glow-color: rgba(184, 57, 31, 0.5);
   animation: up-next-glow 1.5s ease-in-out infinite;
 }
 
@@ -305,11 +446,9 @@ body {
   pointer-events: none;
 }
 
-/* ---- Modal open/close: subtle scale + fade ----
-   Phase 4: the panel now carries a light 3D perspective — it eases in from
-   a slight rotateX as if tipping toward the viewer, rather than scaling
-   flatly. `perspective` lives on the keyframe transform itself (not a
-   parent) so it needs no extra wrapper element. */
+/* ---- Modal open/close: subtle scale + fade, now on an opaque panel ----
+   Same Phase 4 perspective-tip keyframes as before; only the panel behind
+   them changed material (opaque instead of glass). */
 @keyframes modal-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -331,73 +470,10 @@ body {
 .modal-panel-in { animation: modal-panel-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both; transform-style: preserve-3d; }
 .modal-panel-out { animation: modal-panel-out 160ms ease both; transform-style: preserve-3d; }
 
-/* ---- TV ambient background: a handful of slow-drifting blurred shapes
-   behind the schedule grid, purely decorative and purely CSS (no JS
-   drives these frames — they cannot drift or accumulate cost over a
-   multi-hour TV session). Kept low-opacity/low-contrast and z-indexed
-   under the glass panels so it never competes with reading the board. ---- */
-.tv-ambient-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.tv-ambient-bg span {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.5;
-  will-change: transform;
-}
-.tv-ambient-bg span:nth-child(1) {
-  width: 42vw;
-  height: 42vw;
-  top: -12vw;
-  left: -10vw;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  opacity: 0.10;
-  animation: tv-drift-1 52s ease-in-out infinite;
-}
-.tv-ambient-bg span:nth-child(2) {
-  width: 36vw;
-  height: 36vw;
-  bottom: -14vw;
-  right: -8vw;
-  background: radial-gradient(circle, var(--ok) 0%, transparent 70%);
-  opacity: 0.08;
-  animation: tv-drift-2 64s ease-in-out infinite;
-}
-.tv-ambient-bg span:nth-child(3) {
-  width: 30vw;
-  height: 30vw;
-  top: 35%;
-  left: 55%;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  opacity: 0.06;
-  animation: tv-drift-3 70s ease-in-out infinite;
-}
-@keyframes tv-drift-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(4vw, 3vw) scale(1.08); }
-}
-@keyframes tv-drift-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-3vw, -4vw) scale(1.06); }
-}
-@keyframes tv-drift-3 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-3vw, 2vw) scale(0.95); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-ambient-bg { display: none; }
-}
-
 /* ---- Login panel: gentle perspective-tilt on mount + pointer response ----
-   The tilt itself is driven by two CSS custom properties (--tilt-x/--tilt-y)
-   that the login page updates on pointer move; the transform and its easing
-   are pure CSS so no per-frame layout/paint work happens in JS beyond
-   setting two numbers. */
+   Kept from Phase 4 — this is a 3D transform accent, independent of the
+   (now-removed) glass material, so it still applies cleanly to the opaque
+   panel. */
 @keyframes login-panel-in {
   from { opacity: 0; transform: perspective(1200px) rotateX(8deg) scale(0.94) translateY(14px); }
   to { opacity: 1; transform: perspective(1200px) rotateX(0deg) scale(1) translateY(0); }
@@ -430,7 +506,7 @@ body {
   display: inline-flex;
   animation: empty-state-float 4.5s ease-in-out infinite;
   transform-style: preserve-3d;
-  filter: drop-shadow(0 10px 14px var(--shadow-color));
+  filter: drop-shadow(0 10px 14px var(--shadow));
 }
 @media (prefers-reduced-motion: reduce) {
   .empty-state-icon { animation: none; transform: none; }
@@ -450,13 +526,11 @@ body {
 
 /*
   ---- prefers-reduced-motion: one shared gate for every CSS animation and
-  transition above (and the icon-btn/glass-hover transitions earlier in this
-  file). Collapses every declared animation/transition to effectively
-  instant rather than disabling individual rules by name, so new motion
-  added later is covered automatically. JS-driven timing that isn't purely
-  CSS (the modal's close-delay, the TV rollover fade-out's removal delay,
-  the FLIP reorder) is gated separately via the usePrefersReducedMotion
-  hook — see src/lib/usePrefersReducedMotion.ts.
+  transition above. Collapses every declared animation/transition to
+  effectively instant rather than disabling individual rules by name, so
+  new motion added later is covered automatically. JS-driven timing that
+  isn't purely CSS is gated separately via usePrefersReducedMotion — see
+  src/lib/usePrefersReducedMotion.ts.
 */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -475,7 +549,7 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-glass-strong);
+  background: var(--border-strong);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-track {

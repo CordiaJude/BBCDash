@@ -5,9 +5,10 @@ import { useAppointments, useReps, useTvSettings } from "@/lib/useLiveData";
 import { useNowTick } from "@/lib/useNowTick";
 import { useAlertScheduler } from "@/lib/useAlertScheduler";
 import { unlockAudio } from "@/lib/sounds";
-import { endOfWeekISO, formatDateShort, todayISO } from "@/lib/time";
+import { endOfWeekISO, todayISO } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { AppointmentCard } from "../AppointmentCard";
+import { AppointmentRow, AppointmentTableHeader } from "../AppointmentRow";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { useFlipAnimation } from "@/lib/useFlipAnimation";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
@@ -152,25 +153,15 @@ export function TvBoard() {
 
   return (
     <div className="relative min-h-dvh p-4 sm:p-6">
-      {/* Phase 4: ambient depth layer, pure CSS, sits behind everything below. */}
-      <div className="tv-ambient-bg" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className="relative z-10">
       {settings?.alerts_enabled && !soundUnlocked && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-          <button
-            onClick={enableSound}
-            className="glass-panel-strong px-10 py-7 text-xl font-semibold hover:bg-[var(--hover-tint-strong)] transition"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <button onClick={enableSound} className="panel-strong px-10 py-7 text-xl font-semibold hover:bg-[var(--panel-alt)] transition-colors">
             🔊 Tap to enable sound alerts
           </button>
         </div>
       )}
 
-      <div className="glass-panel glass-panel-tv px-6 py-4 mb-5 flex items-center justify-between">
+      <div className="panel panel-tv px-6 py-4 mb-5 flex items-center justify-between">
         <h1 className="text-headline text-2xl">Appointment Board</h1>
         <span className="tabular text-lg text-secondary">
           {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} ·{" "}
@@ -181,78 +172,61 @@ export function TvBoard() {
       {!loaded && <p className="text-secondary text-lg">Loading…</p>}
 
       <div key={displayLayout} className={layoutFadeClass}>
-      {displayLayout === "single_list" && (
-        <div ref={singleListRef} className="space-y-2.5 max-w-4xl mx-auto">
-          {renderList.map((a) => (
-            <div
-              key={a.id}
-              data-flip-id={a.id}
-              className={fadingOut.has(a.id) ? "appt-fade-out" : "appt-card-enter"}
-            >
-              <div className="text-label mb-1 ml-1">
-                {formatDateShort(a.appt_date)}
-              </div>
-              <AppointmentCard
-                appt={a}
-                rep={repMap.get(a.rep_id)}
-                now={now}
-                editable={false}
-                tv
-                shimmer={shimmerIds.has(a.id)}
-              />
-            </div>
-          ))}
-          {loaded && renderList.length === 0 && <EmptyState message="No appointments this week." />}
-        </div>
-      )}
-
-      {displayLayout === "columns_per_rep" && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(reps.length, 1)}, minmax(240px, 1fr))` }}>
-          {reps
-            .filter((r) => r.active)
-            .map((r) => (
-              <div key={r.id}>
-                <div className="glass-input px-3 py-2.5 mb-2 text-base text-headline flex items-center gap-2" style={{ borderColor: "var(--border-glass-strong)", boxShadow: "0 6px 16px -10px var(--shadow-color-tv)", borderLeft: `4px solid ${r.color_hex}` }}>
-                  {r.display_name}
+        {displayLayout === "single_list" && (
+          <div className="panel panel-tv max-w-4xl mx-auto p-4 sm:p-5">
+            <AppointmentTableHeader />
+            <div ref={singleListRef}>
+              {renderList.map((a) => (
+                <div key={a.id} data-flip-id={a.id} className={fadingOut.has(a.id) ? "appt-fade-out" : "appt-card-enter"}>
+                  <AppointmentRow appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} shimmer={shimmerIds.has(a.id)} showDateLabel />
                 </div>
+              ))}
+            </div>
+            {loaded && renderList.length === 0 && <EmptyState message="No appointments this week." />}
+          </div>
+        )}
+
+        {displayLayout === "columns_per_rep" && (
+          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(reps.length, 1)}, minmax(240px, 1fr))` }}>
+            {reps
+              .filter((r) => r.active)
+              .map((r) => (
+                <div key={r.id}>
+                  <div className="field px-3 py-2.5 mb-2 text-base text-headline flex items-center gap-2" style={{ borderLeft: `4px solid ${r.color_hex}` }}>
+                    {r.display_name}
+                  </div>
+                  <div className="space-y-2.5">
+                    {sorted
+                      .filter((a) => a.rep_id === r.id)
+                      .map((a) => (
+                        <div key={a.id} className="appt-card-enter">
+                          <AppointmentCard appt={a} rep={r} now={now} editable={false} compact tv shimmer={shimmerIds.has(a.id)} />
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {displayLayout === "columns_by_status" && (
+          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(4, minmax(240px, 1fr))" }}>
+            {STATUS_COLUMNS.map((col) => (
+              <div key={col.key}>
+                <div className="field px-3 py-2.5 mb-2 text-base text-headline text-center">{col.label}</div>
                 <div className="space-y-2.5">
                   {sorted
-                    .filter((a) => a.rep_id === r.id)
+                    .filter((a) => statusBucket(a) === col.key)
                     .map((a) => (
                       <div key={a.id} className="appt-card-enter">
-                        <AppointmentCard appt={a} rep={r} now={now} editable={false} compact tv shimmer={shimmerIds.has(a.id)} />
+                        <AppointmentCard appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} compact tv shimmer={shimmerIds.has(a.id)} />
                       </div>
                     ))}
                 </div>
               </div>
             ))}
-        </div>
-      )}
-
-      {displayLayout === "columns_by_status" && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(4, minmax(240px, 1fr))" }}>
-          {STATUS_COLUMNS.map((col) => (
-            <div key={col.key}>
-              <div
-                className="glass-input px-3 py-2.5 mb-2 text-base text-headline text-center"
-                style={{ borderColor: "var(--border-glass-strong)", boxShadow: "0 6px 16px -10px var(--shadow-color-tv)" }}
-              >
-                {col.label}
-              </div>
-              <div className="space-y-2.5">
-                {sorted
-                  .filter((a) => statusBucket(a) === col.key)
-                  .map((a) => (
-                    <div key={a.id} className="appt-card-enter">
-                      <AppointmentCard appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} compact tv shimmer={shimmerIds.has(a.id)} />
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      </div>
+          </div>
+        )}
       </div>
     </div>
   );

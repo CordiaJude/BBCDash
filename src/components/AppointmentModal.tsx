@@ -115,13 +115,13 @@ export function AppointmentModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm ${
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 ${
         closing ? "modal-backdrop-out" : "modal-backdrop-in"
       }`}
       onClick={() => requestClose(onClose)}
     >
       <div
-        className={`glass-panel-strong w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 ${
+        className={`panel-strong w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 ${
           closing ? "modal-panel-out" : "modal-panel-in"
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -131,7 +131,7 @@ export function AppointmentModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Customer name" className="sm:col-span-2">
             <input
-              className="glass-input w-full px-3 py-2"
+              className="field w-full px-3 py-2"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               disabled={!canEditAll}
@@ -140,7 +140,7 @@ export function AppointmentModal({
           </Field>
           <Field label="Vehicle" className="sm:col-span-2">
             <input
-              className="glass-input w-full px-3 py-2"
+              className="field w-full px-3 py-2"
               placeholder="2024 Toyota Camry"
               value={vehicle}
               onChange={(e) => setVehicle(e.target.value)}
@@ -150,7 +150,7 @@ export function AppointmentModal({
           <Field label="Date">
             <input
               type="date"
-              className="glass-input w-full px-3 py-2 tabular"
+              className="field w-full px-3 py-2 tabular"
               value={apptDate}
               onChange={(e) => setApptDate(e.target.value)}
               disabled={!canEditAll}
@@ -158,7 +158,7 @@ export function AppointmentModal({
           </Field>
           <Field label="Time">
             <select
-              className="glass-input w-full px-3 py-2 tabular"
+              className="field w-full px-3 py-2 tabular"
               value={apptTime}
               onChange={(e) => setApptTime(e.target.value)}
               disabled={!canEditAll}
@@ -173,7 +173,7 @@ export function AppointmentModal({
 
           {isManager && (
             <Field label="Assigned rep" className="sm:col-span-2">
-              <select className="glass-input w-full px-3 py-2" value={repId} onChange={(e) => setRepId(e.target.value)}>
+              <select className="field w-full px-3 py-2" value={repId} onChange={(e) => setRepId(e.target.value)}>
                 {reps.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.display_name}
@@ -185,7 +185,7 @@ export function AppointmentModal({
 
           <Field label="Appraisal link" className="sm:col-span-2">
             <input
-              className="glass-input w-full px-3 py-2"
+              className="field w-full px-3 py-2"
               placeholder="https://…"
               value={appraisalLink}
               onChange={(e) => setAppraisalLink(e.target.value)}
@@ -194,7 +194,7 @@ export function AppointmentModal({
           </Field>
           <Field label="vAuto link" className="sm:col-span-2">
             <input
-              className="glass-input w-full px-3 py-2"
+              className="field w-full px-3 py-2"
               placeholder="https://…"
               value={vautoLink}
               onChange={(e) => setVautoLink(e.target.value)}
@@ -203,7 +203,7 @@ export function AppointmentModal({
           </Field>
           <Field label="CRM">
             <select
-              className="glass-input w-full px-3 py-2"
+              className="field w-full px-3 py-2"
               value={crmLabel}
               onChange={(e) => setCrmLabel(e.target.value as CrmLabel | "")}
               disabled={!canEditAll}
@@ -215,7 +215,7 @@ export function AppointmentModal({
           </Field>
           <Field label="CRM link">
             <input
-              className="glass-input w-full px-3 py-2"
+              className="field w-full px-3 py-2"
               placeholder="https://…"
               value={crmLink}
               onChange={(e) => setCrmLink(e.target.value)}
@@ -224,7 +224,7 @@ export function AppointmentModal({
           </Field>
           <Field label="Notes" className="sm:col-span-2">
             <textarea
-              className="glass-input w-full px-3 py-2 min-h-20"
+              className="field w-full px-3 py-2 min-h-20"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               disabled={!canEditAll}
@@ -249,7 +249,7 @@ export function AppointmentModal({
           <div className="flex gap-2">
             <button
               onClick={() => requestClose(onClose)}
-              className="glass-input px-4 py-2 text-sm hover:bg-[var(--hover-tint-strong)]"
+              className="field px-4 py-2 text-sm hover:bg-[var(--hover-surface-strong)]"
             >
               Cancel
             </button>

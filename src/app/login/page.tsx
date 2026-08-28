@@ -90,7 +90,7 @@ function LoginForm() {
 
   return (
     <div className="min-h-dvh flex items-center justify-center p-6">
-      <div ref={panelRef} className="glass-panel-strong login-panel-enter login-panel-tilt w-full max-w-sm p-8">
+      <div ref={panelRef} className="panel-strong login-panel-enter login-panel-tilt w-full max-w-sm p-8">
         <h1 className="text-xl font-semibold text-center mb-1">Appointment Board</h1>
         <p className="text-sm text-[var(--foreground-muted)] text-center mb-6">Sign in with your username and PIN</p>
 
@@ -105,7 +105,7 @@ function LoginForm() {
           onKeyDown={(e) => {
             if (e.key === "Enter") document.getElementById("pin-0")?.focus();
           }}
-          className="glass-input w-full px-3 py-2.5 mb-4 text-base"
+          className="field w-full px-3 py-2.5 mb-4 text-base"
           placeholder="jsmith"
           autoComplete="username"
           disabled={submitting}
@@ -117,7 +117,7 @@ function LoginForm() {
             <div
               key={i}
               id={`pin-${i}`}
-              className="w-12 h-14 rounded-2xl glass-input flex items-center justify-center text-2xl tabular"
+              className="w-12 h-14 rounded-2xl field flex items-center justify-center text-2xl tabular"
             >
               {pin[i] ? "•" : ""}
             </div>
@@ -133,7 +133,7 @@ function LoginForm() {
               type="button"
               onClick={() => pressDigit(d)}
               disabled={submitting}
-              className="glass-input py-3.5 text-lg font-medium hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
+              className="field py-3.5 text-lg font-medium hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
             >
               {d}
             </button>
@@ -142,7 +142,7 @@ function LoginForm() {
             type="button"
             onClick={backspace}
             disabled={submitting}
-            className="glass-input py-3.5 text-sm hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
+            className="field py-3.5 text-sm hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
           >
             ⌫
           </button>
@@ -150,7 +150,7 @@ function LoginForm() {
             type="button"
             onClick={() => pressDigit("0")}
             disabled={submitting}
-            className="glass-input py-3.5 text-lg font-medium hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
+            className="field py-3.5 text-lg font-medium hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
           >
             0
           </button>
@@ -158,7 +158,7 @@ function LoginForm() {
             type="button"
             onClick={() => setPin("")}
             disabled={submitting}
-            className="glass-input py-3.5 text-sm hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
+            className="field py-3.5 text-sm hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
           >
             Clear
           </button>

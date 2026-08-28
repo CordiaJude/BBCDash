@@ -38,7 +38,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
   }
 
   return (
-    <div className="glass-panel p-4 sm:p-5">
+    <div className="py-6 border-b border-[var(--border)]">
       <h2 className="text-headline text-lg mb-4">TV display</h2>
 
       <p className="text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-2">Layout mode</p>
@@ -47,8 +47,8 @@ export function TvControls({ settings }: { settings: TvSettings }) {
           <button
             key={l.value}
             onClick={() => patch({ layout_mode: l.value })}
-            className={`glass-input p-3 text-left transition-colors ${
-              settings.layout_mode === l.value ? "bg-[var(--hover-tint-strong)] ring-1 ring-[var(--accent)]/50" : "hover:bg-[var(--hover-tint)]"
+            className={`field p-3 text-left transition-colors ${
+              settings.layout_mode === l.value ? "bg-[var(--hover-surface-strong)] ring-1 ring-[var(--accent)]/50" : "hover:bg-[var(--hover-surface)]"
             }`}
           >
             <div className="text-sm font-medium">{l.label}</div>
@@ -69,7 +69,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
           Enabled
         </label>
         <select
-          className="glass-input px-3 py-1.5 text-sm"
+          className="field px-3 py-1.5 text-sm"
           value={settings.alert_sound}
           onChange={(e) => patch({ alert_sound: e.target.value })}
           disabled={!settings.alerts_enabled}
@@ -83,7 +83,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
       </div>
       <div className="flex items-center gap-2">
         <input
-          className="glass-input px-3 py-1.5 text-sm tabular w-48"
+          className="field px-3 py-1.5 text-sm tabular w-48"
           value={offsetsText}
           onChange={(e) => setOffsetsText(e.target.value)}
           placeholder="30, 15"
@@ -92,7 +92,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
         <button
           onClick={saveOffsets}
           disabled={!settings.alerts_enabled || saving}
-          className="glass-input px-3 py-1.5 text-sm hover:bg-[var(--hover-tint-strong)] disabled:opacity-50"
+          className="field px-3 py-1.5 text-sm hover:bg-[var(--hover-surface-strong)] disabled:opacity-50"
         >
           Save
         </button>

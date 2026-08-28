@@ -8,7 +8,7 @@ function LinkButton({ href, label, icon }: { href: string; label: string; icon: 
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       title={label}
-      className="glass-icon-btn"
+      className="icon-btn"
     >
       {icon}
       <span>{label}</span>
