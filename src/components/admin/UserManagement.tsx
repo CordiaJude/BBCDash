@@ -6,17 +6,17 @@ import { RepAvatar } from "../RepAvatar";
 
 export function UserManagement({ reps }: { reps: Rep[] }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [pin, setPin] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"rep" | "manager">("rep");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function addRep() {
-    if (!username.trim() || !displayName.trim() || !/^\d{4}$/.test(pin)) {
-      setError("Fill in username, display name, and a 4-digit PIN.");
+    if (!email.trim() || !displayName.trim() || password.length < 8) {
+      setError("Fill in email, display name, and a password of at least 8 characters.");
       return;
     }
     setSaving(true);
@@ -24,7 +24,7 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, display_name: displayName, pin, role }),
+      body: JSON.stringify({ email, display_name: displayName, password, role }),
     });
     const data = await res.json();
     setSaving(false);
@@ -32,9 +32,9 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
       setError(data.error ?? "Failed to create user.");
       return;
     }
-    setUsername("");
+    setEmail("");
     setDisplayName("");
-    setPin("");
+    setPassword("");
     setRole("rep");
     setShowAdd(false);
   }
@@ -47,17 +47,17 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
     });
   }
 
-  async function resetPin(rep: Rep) {
-    const newPin = prompt(`New 4-digit PIN for ${rep.display_name}:`);
-    if (!newPin) return;
-    if (!/^\d{4}$/.test(newPin)) {
-      alert("PIN must be exactly 4 digits.");
+  async function resetPassword(rep: Rep) {
+    const newPassword = prompt(`New password for ${rep.display_name} (min 8 characters):`);
+    if (!newPassword) return;
+    if (newPassword.length < 8) {
+      alert("Password must be at least 8 characters.");
       return;
     }
     await fetch(`/api/users/${rep.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: newPin }),
+      body: JSON.stringify({ password: newPassword }),
     });
   }
 
@@ -83,9 +83,10 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
         <div className="field p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
             className="field px-3 py-2"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <input
             className="field px-3 py-2"
@@ -94,12 +95,11 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
             onChange={(e) => setDisplayName(e.target.value)}
           />
           <input
-            className="field px-3 py-2 tabular"
-            placeholder="4-digit PIN"
-            inputMode="numeric"
-            maxLength={4}
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+            className="field px-3 py-2"
+            placeholder="Password (min 8 characters)"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <select className="field px-3 py-2" value={role} onChange={(e) => setRole(e.target.value as "rep" | "manager")}>
             <option value="rep">Rep</option>
@@ -141,13 +141,13 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
                   {r.display_name} {!r.active && <span className="text-xs text-[var(--foreground-muted)]">(inactive)</span>}
                 </div>
                 <div className="text-xs text-[var(--foreground-muted)]">
-                  @{r.username} · {r.role}
+                  {r.email} · {r.role}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => resetPin(r)} className="field px-2.5 py-1.5 text-xs hover:bg-[var(--hover-surface-strong)]">
-                Reset PIN
+              <button onClick={() => resetPassword(r)} className="field px-2.5 py-1.5 text-xs hover:bg-[var(--hover-surface-strong)]">
+                Reset password
               </button>
               <button
                 onClick={() => toggleActive(r)}

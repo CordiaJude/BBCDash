@@ -18,11 +18,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (body.role === "rep" || body.role === "manager") update.role = body.role;
   if (typeof body.active === "boolean") update.active = body.active;
-  if (typeof body.pin === "string") {
-    if (!/^\d{4}$/.test(body.pin)) {
-      return NextResponse.json({ error: "PIN must be exactly 4 digits." }, { status: 400 });
+  if (typeof body.password === "string") {
+    if (body.password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
     }
-    update.pin_hash = await bcrypt.hash(body.pin, 10);
+    update.password_hash = await bcrypt.hash(body.password, 10);
   }
 
   if (Object.keys(update).length === 0) {
@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .from("users")
     .update(update)
     .eq("id", id)
-    .select("id, username, display_name, role, color_hex, photo_url, active, created_at")
+    .select("id, email, display_name, role, color_hex, photo_url, active, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

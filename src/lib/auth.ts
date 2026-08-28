@@ -42,7 +42,7 @@ export async function getSession(): Promise<SessionUser | null> {
     const { payload } = await jwtVerify(token, getSecret());
     return {
       id: payload.id as string,
-      username: payload.username as string,
+      email: payload.email as string,
       display_name: payload.display_name as string,
       role: payload.role as SessionUser["role"],
       color_hex: payload.color_hex as string,
@@ -57,7 +57,7 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
     const { payload } = await jwtVerify(token, getSecret());
     return {
       id: payload.id as string,
-      username: payload.username as string,
+      email: payload.email as string,
       display_name: payload.display_name as string,
       role: payload.role as SessionUser["role"],
       color_hex: payload.color_hex as string,

@@ -9,11 +9,11 @@ const MAX_TILT_DEG = 6;
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const [username, setUsername] = useState("");
-  const [pin, setPin] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLFormElement>(null);
   const reducedMotion = usePrefersReducedMotion();
 
   // Gentle pointer-driven tilt on the login panel. Scoped to the panel
@@ -21,7 +21,7 @@ function LoginForm() {
   // pointer is actually over the panel, and only attaches at all on
   // hover-capable, fine-pointer devices with motion allowed — touch/no-
   // hover devices and reduced-motion users never get a listener. The
-  // handler just writes two CSS custom properties; the actual transform
+  // handler just writes two CSS custom properties — the actual transform
   // and its easing are pure CSS (`.login-panel-tilt` in globals.css).
   useEffect(() => {
     if (reducedMotion) return;
@@ -51,20 +51,21 @@ function LoginForm() {
     };
   }, [reducedMotion]);
 
-  async function submit(finalPin: string) {
-    if (submitting || !username.trim()) return;
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (submitting || !email.trim() || !password) return;
     setSubmitting(true);
     setError(null);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, pin: finalPin }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Login failed.");
-        setPin("");
+        setPassword("");
         setSubmitting(false);
         return;
       }
@@ -76,95 +77,61 @@ function LoginForm() {
     }
   }
 
-  function pressDigit(d: string) {
-    if (pin.length >= 4 || submitting) return;
-    const next = pin + d;
-    setPin(next);
-    setError(null);
-    if (next.length === 4) submit(next);
-  }
-
-  function backspace() {
-    setPin((p) => p.slice(0, -1));
-  }
-
   return (
     <div className="min-h-dvh flex items-center justify-center p-6">
-      <div ref={panelRef} className="panel-strong login-panel-enter login-panel-tilt w-full max-w-sm p-8">
+      <form
+        ref={panelRef}
+        onSubmit={submit}
+        className="panel-strong login-panel-enter login-panel-tilt w-full max-w-sm p-8"
+      >
         <h1 className="text-xl font-semibold text-center mb-1">Appointment Board</h1>
-        <p className="text-sm text-[var(--foreground-muted)] text-center mb-6">Sign in with your username and PIN</p>
+        <p className="text-sm text-[var(--foreground-muted)] text-center mb-6">Sign in with your email and password</p>
 
-        <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1">Username</label>
+        <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1" htmlFor="email">
+          Email
+        </label>
         <input
+          id="email"
+          type="email"
           autoFocus
-          value={username}
+          value={email}
           onChange={(e) => {
-            setUsername(e.target.value);
+            setEmail(e.target.value);
             setError(null);
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") document.getElementById("pin-0")?.focus();
-          }}
           className="field w-full px-3 py-2.5 mb-4 text-base"
-          placeholder="jsmith"
-          autoComplete="username"
+          placeholder="jane@dealership.com"
+          autoComplete="email"
           disabled={submitting}
         />
 
-        <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1">PIN</label>
-        <div className="flex gap-3 justify-center mb-5">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              id={`pin-${i}`}
-              className="w-12 h-14 rounded-2xl field flex items-center justify-center text-2xl tabular"
-            >
-              {pin[i] ? "•" : ""}
-            </div>
-          ))}
-        </div>
+        <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1" htmlFor="password">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError(null);
+          }}
+          className="field w-full px-3 py-2.5 mb-5 text-base"
+          placeholder="••••••••"
+          autoComplete="current-password"
+          disabled={submitting}
+        />
 
         {error && <p className="text-sm text-[var(--bad)] text-center mb-3">{error}</p>}
 
-        <div className="grid grid-cols-3 gap-2">
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => pressDigit(d)}
-              disabled={submitting}
-              className="field py-3.5 text-lg font-medium hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
-            >
-              {d}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={backspace}
-            disabled={submitting}
-            className="field py-3.5 text-sm hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
-          >
-            ⌫
-          </button>
-          <button
-            type="button"
-            onClick={() => pressDigit("0")}
-            disabled={submitting}
-            className="field py-3.5 text-lg font-medium hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
-          >
-            0
-          </button>
-          <button
-            type="button"
-            onClick={() => setPin("")}
-            disabled={submitting}
-            className="field py-3.5 text-sm hover:bg-[var(--hover-surface-strong)] active:scale-95 transition disabled:opacity-50"
-          >
-            Clear
-          </button>
-        </div>
-        {submitting && <p className="text-xs text-center text-[var(--foreground-muted)] mt-4">Checking…</p>}
-      </div>
+        <button
+          type="submit"
+          disabled={submitting || !email.trim() || !password}
+          className="w-full py-3 rounded-2xl text-base font-medium bg-[var(--accent)] text-white hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50"
+        >
+          {submitting ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
     </div>
   );
 }

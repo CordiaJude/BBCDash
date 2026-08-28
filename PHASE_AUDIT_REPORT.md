@@ -1495,3 +1495,158 @@ treated rep-color accents.
   than a real per-day filter, since no per-day filtering exists anywhere
   in the data layer and adding one was out of this pass's scope — noted
   above under "Header, date selector."
+
+## Auth Model Change — Email + Password
+
+Replaced the entire custom auth model: username + 4-digit numeric PIN
+(bcrypt-hashed PIN) is now email + password (bcrypt-hashed password, min 8
+characters). Still **not** Supabase Auth — a manager creates every account
+directly with an email and password, exactly as before with
+username+PIN, and there is deliberately no email-verification/confirmation
+step. No visual design outside the login page's credential fields was
+touched (the login panel keeps its Phase 2/2.1/4 glass/tilt/entrance
+treatment); the tri-state status system, appointment CRUD, TV display,
+Realtime wiring, and motion/3D layers are all untouched.
+
+### Files touched
+
+- **`src/lib/types.ts`** — `Rep.username` → `Rep.email`; `SessionUser.username`
+  → `SessionUser.email`.
+- **`src/lib/auth.ts`** — the JWT payload's `username` claim renamed to
+  `email` in both `getSession()` and `verifySessionToken()`. (`src/proxy.ts`,
+  Next.js 16's rename of `middleware.ts` — confirmed this is the actual
+  route-gating mechanism, despite the pre-existing README claiming
+  `src/middleware.ts` — was read and needed **no change**: it only reads
+  the `role` claim off the JWT payload, never `username`/`email`.)
+- **`src/app/api/auth/login/route.ts`** — accepts `{ email, password }`
+  instead of `{ username, pin }`; queries `users` by `email`, compares
+  `password` against `password_hash` with `bcrypt.compare`, generic
+  "Invalid email or password." error (no PIN-format regex anymore, since a
+  password has no fixed shape to validate other than "non-empty" at the
+  API layer — length is enforced at account-creation/reset time instead).
+- **`src/app/api/auth/logout/route.ts`** — confirmed unchanged; it only
+  clears the session cookie and never referenced username/PIN.
+- **`src/app/login/page.tsx`** — replaced the numeric PIN pad
+  (`pressDigit`/`backspace`/auto-submit-on-4th-digit) with two real
+  fields: `<input type="email">` and `<input type="password">`, wrapped in
+  a `<form onSubmit>` so both Enter-to-submit and an explicit "Sign in"
+  button work (no reason to auto-submit a password field the way a
+  4-digit PIN auto-submitted). The panel root changed from a `<div>` to a
+  `<form>` — verified `globals.css` targets `.login-panel-enter`/
+  `.login-panel-tilt` by class only, never by tag, so the Phase 2/4
+  glass-panel/tilt/entrance treatment carries over unchanged; the tilt
+  `useRef` type was updated from `HTMLDivElement` to `HTMLFormElement` to
+  match.
+- **`src/app/api/users/route.ts`** (POST, manager-only create) — takes
+  `email`/`password` instead of `username`/`pin`; validates email with a
+  basic `^[^\s@]+@[^\s@]+\.[^\s@]+$` regex and password with a `length >= 8`
+  check (deliberately no complexity rules beyond a sane minimum length,
+  per the task's own guidance not to overengineer); duplicate-key error
+  message changed from "That username is already taken." to "That email
+  is already in use."
+- **`src/app/api/users/[id]/route.ts`** (PATCH, manager-only edit) — the
+  optional PIN-reset field (`pin`, validated as exactly 4 digits) became
+  an optional `password` field (validated as `length >= 8`) that hashes
+  into `password_hash`; `display_name`/`role`/`active` update logic is
+  unchanged.
+- **`src/app/api/users/[id]/photo/route.ts`** — the `.select(...)` column
+  list after the photo-URL update changed `username` → `email` (the route
+  itself has no other auth-field logic).
+- **`src/components/admin/UserManagement.tsx`** — the "+ Add account" form's
+  username/4-digit-PIN inputs became `<input type="email">` and
+  `<input type="password">` (placeholder "Password (min 8 characters)");
+  the roster row's `@{r.username}` label became `{r.email}`; the
+  "Reset PIN" button/handler (`prompt()` for a 4-digit PIN) became "Reset
+  password" (`prompt()` for a password, validated `length >= 8` client-side
+  before the PATCH).
+- **`scripts/create-admin.mjs`** — usage changed from
+  `<username> <display_name> <4-digit-pin>` to
+  `<email> <display_name> <password>`; validates email format and a
+  minimum 8-character password instead of the `^\d{4}$` PIN regex; inserts
+  `email`/`password_hash` instead of `username`/`pin_hash`.
+- **`supabase/migrations/0002_email_password_auth.sql`** (new) — see
+  below.
+- **`README.md`** — "Create the first manager account" now shows
+  `node scripts/create-admin.mjs jane@dealership.com "Jane Smith"
+  a-strong-password` with the email/8-char-password requirements spelled
+  out; "One-time setup → 1. Database" now lists running `0002_...sql`
+  after `0001_init.sql` as a required step, with an inline warning that
+  pre-existing accounts need their email/password re-set after the
+  rename; "How auth works" now describes email + password instead of
+  username + PIN (and no longer names `src/middleware.ts`, which doesn't
+  exist in this codebase — the actual gating file is `src/proxy.ts`, the
+  Next.js 16 rename of middleware, confirmed unaffected by this change).
+
+### The new migration — `supabase/migrations/0002_email_password_auth.sql`
+
+A comment block at the top of the file explicitly flags that it **must be
+run manually against the live Supabase project** (same SQL-editor process
+as `0001_init.sql`) since this sandbox has no network route to Supabase,
+and that **existing accounts will need their `email`/`password_hash`
+values re-set after the rename**, since an old 4-digit PIN's bcrypt hash
+can never satisfy a real password login.
+
+Contents:
+1. `alter table public.users rename column username to email;` — a
+   straight schema-level rename (no data transform needed to move the
+   column; the *values* stored will need to actually be real email
+   addresses going forward, which is a data/process concern for whoever
+   re-bootstraps accounts, not something a rename migration can enforce).
+2. `alter table public.users rename column pin_hash to password_hash;` —
+   also a straight rename; both old and new columns store a bcrypt hash
+   string, and `bcryptjs` already handles arbitrary-length input (a
+   4-digit PIN or a long password) with no algorithm change required.
+3. `create or replace view public.reps as select id, email, ...` —
+   explicitly redefines the `reps` view (used by the browser client for
+   reads/Realtime) against the new column name. (Postgres actually
+   propagates a base-table column rename into a dependent view
+   automatically when the view has no explicit alias for that column, so
+   this statement is likely a no-op in practice — but it's included so the
+   migration is correct and self-documenting even if that propagation
+   behavior differs across Postgres versions, rather than relying on an
+   implicit mechanism.)
+4. `grant select on public.reps to anon, authenticated;` — re-asserted
+   after the view redefinition, matching `0001`'s original grant.
+
+No RLS policy in `0001_init.sql` references `username` by name (the
+`users` table itself has no select policy at all — `pin_hash`/now
+`password_hash` must never reach the browser, so RLS intentionally has no
+policy allowing `anon`/`authenticated` to select from `public.users`
+directly; only the safe `reps` view is exposed), so no policy text needed
+updating beyond the view redefinition above.
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors (one real error was caught and
+  fixed mid-pass: the login panel's `useRef<HTMLDivElement>` needed to
+  become `useRef<HTMLFormElement>` once the panel root changed from a
+  `<div>` to a `<form>`).
+- `npx eslint .` — clean, no warnings or errors.
+- `npx next build` — **ran successfully this pass** (prior phases could
+  not run it due to the standing Supabase-network-block caveat; this
+  build completed with no prerender/network issue and produced the
+  expected route manifest, including `/login` as a static route and
+  `/api/auth/login`, `/api/users`, `/api/users/[id]`,
+  `/api/users/[id]/photo` as dynamic routes). This is a stronger
+  verification result than prior phases got, though it still doesn't
+  substitute for an actual login attempt against live data.
+
+### Action items for the user (not completable from this sandbox)
+
+1. **Run the new migration.** Open the Supabase SQL editor for this
+   project and run `supabase/migrations/0002_email_password_auth.sql` (in
+   addition to `0001_init.sql` if that hasn't already been applied).
+2. **Re-bootstrap or reset every existing account's credentials.** After
+   the rename, any pre-existing row's `email` column holds its old
+   username string (not a real email) and its `password_hash` column
+   holds a hash of its old 4-digit PIN (which cannot be typed as a
+   matching password). Either:
+   - Run `node scripts/create-admin.mjs <email> <display_name>
+     <password>` again to create a fresh manager account (if none of the
+     old accounts need to be preserved), or
+   - Manually `update public.users set email = '<real email>' where id =
+     '<id>'` for each account you want to keep, then use the Admin →
+     Reps & managers "Reset password" action (once you're logged in with
+     at least one working account) to set each one's real password.
+3. Nothing else in the data layer changes — appointment rows, `rep_id`
+   foreign keys, colors, and photos are all untouched by this migration.

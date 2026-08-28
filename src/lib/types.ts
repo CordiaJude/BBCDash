@@ -6,7 +6,7 @@ export type AlertSound = "chime" | "bell" | "soft_ping";
 
 export interface Rep {
   id: string;
-  username: string;
+  email: string;
   display_name: string;
   role: Role;
   color_hex: string;
@@ -47,7 +47,7 @@ export interface TvSettings {
 
 export interface SessionUser {
   id: string;
-  username: string;
+  email: string;
   display_name: string;
   role: Role;
   color_hex: string;

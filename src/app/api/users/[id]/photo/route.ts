@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .from("users")
     .update({ photo_url: publicUrl.publicUrl })
     .eq("id", id)
-    .select("id, username, display_name, role, color_hex, photo_url, active, created_at")
+    .select("id, email, display_name, role, color_hex, photo_url, active, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
