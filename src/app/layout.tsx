@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "Dealership sales appointment board",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"

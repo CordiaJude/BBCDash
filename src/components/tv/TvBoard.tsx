@@ -37,10 +37,13 @@ export function TvBoard() {
   const repMap = useMemo(() => new Map(reps.map((r) => [r.id, r])), [reps]);
 
   const weekAppts = useMemo(() => {
+    // Recomputed on every `now` tick (not just when appointments change) so that
+    // completed/past-day appointments actually drop off at midnight rollover,
+    // rather than only when new realtime data happens to arrive.
     const today = todayISO();
-    const end = endOfWeekISO();
+    const end = endOfWeekISO(now);
     return appointments.filter((a) => a.appt_date >= today && a.appt_date <= end);
-  }, [appointments]);
+  }, [appointments, now]);
 
   useAlertScheduler(weekAppts, settings, soundUnlocked);
 
