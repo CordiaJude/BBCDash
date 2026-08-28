@@ -716,3 +716,114 @@ timers. No new package was added.
     inspectable leak patterns (unbounded maps, uncancelled timers,
     unremoved listeners) via code review, not empirical profiling.
 
+
+## Phase 4 — 3D/Depth Accents
+
+Added atmosphere-only 3D/depth touches in exactly the four approved spots,
+all CSS-driven (no framer-motion or other new runtime dependency added),
+and all gated through the existing Phase 3 reduced-motion mechanism.
+
+1. **TV display ambient background** (`src/components/tv/TvBoard.tsx` +
+   `.tv-ambient-bg` in `src/app/globals.css`): three blurred, low-opacity
+   radial-gradient circles (`filter: blur(70px)`, opacity 0.06–0.10) sit in
+   a `position: fixed` layer at `z-index: 0`, with the board's real content
+   wrapped in a `position: relative; z-index: 10` div on top. Each circle
+   drifts slowly (52s/64s/70s `ease-in-out infinite` keyframes doing only
+   `translate`+`scale`) — pure CSS, no JS timer or per-frame recomputation
+   drives them, so they cannot drift, leak, or accumulate cost over a
+   multi-hour TV session. Colors are pulled from the existing `--accent`/
+   `--ok` tokens so they match the theme automatically. Hidden outright
+   (`display: none`) under `prefers-reduced-motion: reduce`.
+2. **Login panel depth** (`src/app/login/page.tsx` + `.login-panel-enter`/
+   `.login-panel-tilt` in `globals.css`): the panel mounts with a perspective
+   entrance (`rotateX(8deg)` easing to flat, scale+translateY, 480ms). After
+   mount, a `mousemove`/`mouseleave` listener **on the panel element itself**
+   (not `window`) writes two CSS custom properties (`--tilt-x`/`--tilt-y`)
+   that a CSS `transform: perspective(1200px) rotateX(var(--tilt-x))
+   rotateY(var(--tilt-y))` with a 150ms transition consumes — so the only
+   JS work per pointer move is two `style.setProperty` calls, no layout
+   thrashing. Tilt is clamped to ±6deg. The listener is attached only when
+   `window.matchMedia("(hover: hover) and (pointer: fine)")` matches (skips
+   touch/no-hover devices entirely) and only when `usePrefersReducedMotion()`
+   is false, and is removed in the effect's cleanup.
+3. **Empty state** (new `src/components/EmptyState.tsx`, used by
+   `DashboardBoard.tsx` and `TvBoard.tsx`'s single-list layout, replacing
+   their old plain-text "no appointments" messages): a small inline SVG
+   icon (a clipboard-with-checkmark glyph built from the existing glass/
+   accent tokens) wrapped in `.empty-state-icon`, which applies a slow
+   4.5s bob (`translateY` oscillation under a fixed slight `rotateX` for
+   the 3D read) via `@keyframes empty-state-float`.
+4. **Modal entrance** (`AppointmentModal.tsx` via `globals.css`'s
+   `modal-panel-in`/`modal-panel-out`): the existing Phase 3 scale+fade
+   keyframes now open on `perspective(1000px) rotateX(6deg)` easing to
+   `rotateX(0deg)` alongside the scale/translateY, so the dialog reads as
+   tipping toward the viewer rather than flatly zooming. No JS changes —
+   same `closing` state machine as before.
+
+Explicitly untouched, as instructed: `AppointmentCard`, `StatusToggle`,
+and any status-checkbox affordance — nothing there gained a hover-tilt or
+any other 3D effect.
+
+### Reduced-motion gating
+
+All four reuse the established Phase 3 mechanism rather than a parallel
+one:
+- The blanket `@media (prefers-reduced-motion: reduce)` rule in
+  `globals.css` already collapses every `animation`/`transition` duration
+  to ~0, which flattens the modal's rotateX entrance and the empty-state
+  float automatically (no per-rule opt-out needed).
+- `.tv-ambient-bg` gets an explicit `display: none` under that same media
+  query, since a merely-instant animation would still leave three static
+  blurred shapes lingering (undesirable — the intent is "off", not
+  "frozen").
+- `.login-panel-tilt` gets an explicit `transform: none !important;
+  transition: none !important` under the same query, matching intent for
+  the same reason.
+- The login page's pointer-tilt *listener* is additionally gated in JS
+  (via `usePrefersReducedMotion()`) so it never attaches at all for
+  reduced-motion users, rather than attaching and then being visually
+  suppressed by CSS.
+
+### Performance / cleanup review
+
+- **TV ambient background is pure CSS.** No `setInterval`/`requestAnimationFrame`
+  drives it; the three `<span>` elements are static in the DOM (rendered
+  once, never re-created) and only their `transform`/`opacity` are
+  animated — cheap, compositor-only properties. Confirmed no JS in
+  `TvBoard.tsx` touches these elements after mount.
+- **Login pointer listener is properly scoped and cleaned up.** It is
+  attached to the panel `<div>` via `panelRef`, not to `window` or
+  `document`, so it only fires while the pointer is physically over the
+  login panel (a small, one-screen-only component that unmounts on
+  navigation away from `/login` — it cannot leak into other pages). The
+  `useEffect` returns a cleanup that calls `removeEventListener` for both
+  `mousemove` and `mouseleave`. The effect also early-returns (attaching
+  nothing) when `prefers-reduced-motion: reduce` is set or the device
+  lacks `hover`+fine pointer, so touch users get zero added listeners.
+- **No new unbounded state.** `EmptyState` is a stateless presentational
+  component. The login tilt state lives entirely in two CSS custom
+  properties on a single DOM node (no React state, no growing
+  map/array). Nothing here reintroduces the class of leak Phase 3 fixed
+  (unpruned maps, uncancelled timers) — no new timers or maps were added
+  in this phase at all.
+- **TV z-index/opacity change reviewed for readability.** The ambient
+  layer sits at `z-index: 0` under a `z-index: 10` content wrapper, is
+  capped at 10% opacity per shape, and blurred to 70px — verified by
+  reading the values against the existing `glass-panel`/card contrast,
+  not by rendering (see Verification below), but the intent and numbers
+  are conservative enough that it should read as "faint depth" not "a
+  competing visual."
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors.
+- `npx eslint .` — clean, no warnings or errors.
+- Real GPU/frame-rate behavior of the TV ambient background over a
+  multi-hour run, and the visual feel of the login tilt and modal
+  perspective entrance in an actual browser, have **not** been verified
+  live — per the standing sandbox constraint (no Supabase network
+  access, no `npm run dev`). This pass is code-review-only: the ambient
+  layer is architecturally guaranteed to be GPU-cheap (pure CSS
+  transform/opacity on 3 static elements, no JS per-frame cost), but an
+  actual soak test on TV hardware is still owed once network access
+  exists.

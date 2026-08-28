@@ -11,6 +11,7 @@ import { AppointmentCard } from "../AppointmentCard";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { useFlipAnimation } from "@/lib/useFlipAnimation";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+import { EmptyState } from "@/components/EmptyState";
 
 const ROLLOFF_FADE_MS = 1000;
 
@@ -150,7 +151,14 @@ export function TvBoard() {
   );
 
   return (
-    <div className="min-h-dvh p-4 sm:p-6">
+    <div className="relative min-h-dvh p-4 sm:p-6">
+      {/* Phase 4: ambient depth layer, pure CSS, sits behind everything below. */}
+      <div className="tv-ambient-bg" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="relative z-10">
       {settings?.alerts_enabled && !soundUnlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
           <button
@@ -194,9 +202,7 @@ export function TvBoard() {
               />
             </div>
           ))}
-          {loaded && renderList.length === 0 && (
-            <p className="text-center text-secondary text-lg py-16">No appointments this week.</p>
-          )}
+          {loaded && renderList.length === 0 && <EmptyState message="No appointments this week." />}
         </div>
       )}
 
@@ -246,6 +252,7 @@ export function TvBoard() {
           ))}
         </div>
       )}
+      </div>
       </div>
     </div>
   );

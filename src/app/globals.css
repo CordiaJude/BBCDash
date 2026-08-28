@@ -305,7 +305,11 @@ body {
   pointer-events: none;
 }
 
-/* ---- Modal open/close: subtle scale + fade ---- */
+/* ---- Modal open/close: subtle scale + fade ----
+   Phase 4: the panel now carries a light 3D perspective — it eases in from
+   a slight rotateX as if tipping toward the viewer, rather than scaling
+   flatly. `perspective` lives on the keyframe transform itself (not a
+   parent) so it needs no extra wrapper element. */
 @keyframes modal-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -315,17 +319,122 @@ body {
   to { opacity: 0; }
 }
 @keyframes modal-panel-in {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: perspective(1000px) rotateX(6deg) scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: perspective(1000px) rotateX(0deg) scale(1) translateY(0); }
 }
 @keyframes modal-panel-out {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.97) translateY(4px); }
+  from { opacity: 1; transform: perspective(1000px) rotateX(0deg) scale(1) translateY(0); }
+  to { opacity: 0; transform: perspective(1000px) rotateX(3deg) scale(0.97) translateY(4px); }
 }
 .modal-backdrop-in { animation: modal-backdrop-in 180ms ease both; }
 .modal-backdrop-out { animation: modal-backdrop-out 180ms ease both; }
-.modal-panel-in { animation: modal-panel-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.modal-panel-out { animation: modal-panel-out 160ms ease both; }
+.modal-panel-in { animation: modal-panel-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both; transform-style: preserve-3d; }
+.modal-panel-out { animation: modal-panel-out 160ms ease both; transform-style: preserve-3d; }
+
+/* ---- TV ambient background: a handful of slow-drifting blurred shapes
+   behind the schedule grid, purely decorative and purely CSS (no JS
+   drives these frames — they cannot drift or accumulate cost over a
+   multi-hour TV session). Kept low-opacity/low-contrast and z-indexed
+   under the glass panels so it never competes with reading the board. ---- */
+.tv-ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.tv-ambient-bg span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  will-change: transform;
+}
+.tv-ambient-bg span:nth-child(1) {
+  width: 42vw;
+  height: 42vw;
+  top: -12vw;
+  left: -10vw;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0.10;
+  animation: tv-drift-1 52s ease-in-out infinite;
+}
+.tv-ambient-bg span:nth-child(2) {
+  width: 36vw;
+  height: 36vw;
+  bottom: -14vw;
+  right: -8vw;
+  background: radial-gradient(circle, var(--ok) 0%, transparent 70%);
+  opacity: 0.08;
+  animation: tv-drift-2 64s ease-in-out infinite;
+}
+.tv-ambient-bg span:nth-child(3) {
+  width: 30vw;
+  height: 30vw;
+  top: 35%;
+  left: 55%;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0.06;
+  animation: tv-drift-3 70s ease-in-out infinite;
+}
+@keyframes tv-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4vw, 3vw) scale(1.08); }
+}
+@keyframes tv-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-3vw, -4vw) scale(1.06); }
+}
+@keyframes tv-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-3vw, 2vw) scale(0.95); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-ambient-bg { display: none; }
+}
+
+/* ---- Login panel: gentle perspective-tilt on mount + pointer response ----
+   The tilt itself is driven by two CSS custom properties (--tilt-x/--tilt-y)
+   that the login page updates on pointer move; the transform and its easing
+   are pure CSS so no per-frame layout/paint work happens in JS beyond
+   setting two numbers. */
+@keyframes login-panel-in {
+  from { opacity: 0; transform: perspective(1200px) rotateX(8deg) scale(0.94) translateY(14px); }
+  to { opacity: 1; transform: perspective(1200px) rotateX(0deg) scale(1) translateY(0); }
+}
+.login-panel-enter {
+  animation: login-panel-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.login-panel-tilt {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: perspective(1200px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition: transform 150ms ease-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-panel-enter { animation: none; opacity: 1; }
+  .login-panel-tilt {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---- Empty state: light 3D icon with a slow float/bob ---- */
+@keyframes empty-state-float {
+  0%, 100% { transform: perspective(600px) rotateX(4deg) translateY(0); }
+  50% { transform: perspective(600px) rotateX(4deg) translateY(-8px); }
+}
+.empty-state-icon {
+  display: inline-flex;
+  animation: empty-state-float 4.5s ease-in-out infinite;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 10px 14px var(--shadow-color));
+}
+@media (prefers-reduced-motion: reduce) {
+  .empty-state-icon { animation: none; transform: none; }
+}
 
 /* ---- TV layout switch: cross-fade instead of a jump-cut ---- */
 @keyframes layout-fade-in {

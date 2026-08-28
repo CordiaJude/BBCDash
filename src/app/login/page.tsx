@@ -1,7 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+const MAX_TILT_DEG = 6;
 
 function LoginForm() {
   const router = useRouter();
@@ -10,6 +13,43 @@ function LoginForm() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  // Gentle pointer-driven tilt on the login panel. Scoped to the panel
+  // itself (not a global window listener) so it only runs while the
+  // pointer is actually over the panel, and only attaches at all on
+  // hover-capable, fine-pointer devices with motion allowed — touch/no-
+  // hover devices and reduced-motion users never get a listener. The
+  // handler just writes two CSS custom properties; the actual transform
+  // and its easing are pure CSS (`.login-panel-tilt` in globals.css).
+  useEffect(() => {
+    if (reducedMotion) return;
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+    const el = panelRef.current;
+    if (!el) return;
+
+    function handleMove(e: MouseEvent) {
+      const rect = el!.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      el!.style.setProperty("--tilt-x", `${(-py * MAX_TILT_DEG).toFixed(2)}deg`);
+      el!.style.setProperty("--tilt-y", `${(px * MAX_TILT_DEG).toFixed(2)}deg`);
+    }
+    function handleLeave() {
+      el!.style.setProperty("--tilt-x", "0deg");
+      el!.style.setProperty("--tilt-y", "0deg");
+    }
+
+    el.addEventListener("mousemove", handleMove);
+    el.addEventListener("mouseleave", handleLeave);
+    return () => {
+      el.removeEventListener("mousemove", handleMove);
+      el.removeEventListener("mouseleave", handleLeave);
+    };
+  }, [reducedMotion]);
 
   async function submit(finalPin: string) {
     if (submitting || !username.trim()) return;
@@ -50,7 +90,7 @@ function LoginForm() {
 
   return (
     <div className="min-h-dvh flex items-center justify-center p-6">
-      <div className="glass-panel-strong w-full max-w-sm p-8">
+      <div ref={panelRef} className="glass-panel-strong login-panel-enter login-panel-tilt w-full max-w-sm p-8">
         <h1 className="text-xl font-semibold text-center mb-1">Appointment Board</h1>
         <p className="text-sm text-[var(--foreground-muted)] text-center mb-6">Sign in with your username and PIN</p>
 

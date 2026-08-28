@@ -5,6 +5,7 @@ import type { Appointment, SessionUser, TriState } from "@/lib/types";
 import { useAppointments, useReps } from "@/lib/useLiveData";
 import { useNowTick } from "@/lib/useNowTick";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
+import { EmptyState } from "@/components/EmptyState";
 import { AppointmentCard } from "./AppointmentCard";
 import { AppointmentModal } from "./AppointmentModal";
 import { formatDateShort, todayISO } from "@/lib/time";
@@ -117,9 +118,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
               />
             </div>
           ))}
-        {loaded && active.length === 0 && (
-          <p className="text-sm text-[var(--foreground-muted)] py-8 text-center">No appointments here yet.</p>
-        )}
+        {loaded && active.length === 0 && <EmptyState message="No appointments here yet." />}
       </div>
 
       {completedToday.length > 0 && (
