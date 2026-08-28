@@ -1016,3 +1016,186 @@ live testing once network access to Supabase exists. That live pass —
 login → add/edit appointment → status toggles → TV sync in a second
 window → sound unlock and playback → a multi-hour TV soak — is the one
 remaining gate before this goes live on an actual showroom TV.
+
+## TV Realtime Debug
+
+User report: "The TV display is not showing newly-created appointments."
+This pass followed the Phase 5 open-risk item ("Supabase Realtime delivery
+has never actually been observed") and investigated the four specific
+hypotheses given, in order, by reading the actual code end-to-end and
+checking it against the installed `@supabase/supabase-js@2.112.4` /
+`@supabase/realtime-js@2.112.4` type definitions in `node_modules` (not
+assumed from memory) and against `supabase/migrations/0001_init.sql`.
+**No code-level bug was found that explains the reported symptom.** One
+unrelated, real Realtime-delivery bug was found and documented (not fixed —
+see below). Every finding below was reached by reading code; no live
+two-tab test was performed (see "What was not verified" at the end).
+
+### 1. Is the TV subscribed to Realtime, or just fetching once?
+
+Subscribed — confirmed real. `src/lib/useLiveData.ts:40-76`
+(`useAppointments`) does an initial `reload()` on mount **and** opens
+`supabase.channel("appointments-changes").on("postgres_changes", { event:
+"*", schema: "public", table: "appointments" }, reload).subscribe()`
+(`useLiveData.ts:64-67`), with `supabase.removeChannel(channel)` in the
+effect cleanup (`:69-72`). This is not a stale/outdated pattern — the exact
+call shape (`type: "postgres_changes"`, filter object with `event`/
+`schema`/`table`, callback receiving `RealtimePostgresChangesPayload`) was
+checked against `node_modules/@supabase/realtime-js/dist/main/
+RealtimeChannel.d.ts:359-361`, the real installed v2.112.4 typings, and
+matches exactly (the `event: "*"` overload at line 361). `TvBoard.tsx:37`
+consumes this same hook (`useAppointments()`), so the TV is driven by a
+live subscription, not a one-shot `.select()`.
+
+### 2. Is the subscription filtering out today's new appointment by date?
+
+No filter is applied at all. `useLiveData.ts:66` passes no `filter:` key —
+`reload()` on any INSERT/UPDATE/DELETE re-runs an **unconstrained**
+`supabase.from("appointments").select("*")` (`:49-53`), so there is no
+stale-closure date filter that could silently exclude a new row at the
+subscription layer. Date-range narrowing to "this week" happens entirely
+client-side, after the fact, in `TvBoard.tsx`'s `weekAppts` `useMemo`
+(`:47-54`), which was already fixed in Phase 1 to depend on the ticking
+`now` clock (not just `[appointments]`), so it isn't a stale closure
+either. Table/column names match `0001_init.sql` exactly: subscribed table
+is `public.appointments` (`table: "appointments"`, schema `"public"`,
+matching migration line 27); columns read (`appt_date`, `appt_time`, etc.)
+match the migration's column list and `src/lib/types.ts`'s `Appointment`
+interface one-for-one.
+
+### 3. Does the insert path write to the same table/columns the TV reads, and can the anon key actually see the row?
+
+Traced the full path: `AppointmentModal.tsx:65-101` (`save()`) → `POST
+/api/appointments` (`src/app/api/appointments/route.ts:5-52`) →
+`createAdminClient()` (service-role key, bypasses RLS) → `.insert()` into
+`public.appointments` with `customer_name`, `vehicle`, `appt_date`,
+`appt_time`, `rep_id`, and the link/notes fields — the exact same table and
+column set the migration defines and the TV's `.select("*")` reads back.
+
+- **Format check:** `appt_date` comes from a plain HTML `<input
+  type="date">` (`AppointmentModal.tsx:150-157`), which yields a
+  `YYYY-MM-DD` string — the same format `todayISO()`/`endOfWeekISO()`
+  produce (`src/lib/time.ts:29-32,55-61`) and the same format Postgres
+  `date` columns round-trip through PostgREST's JSON serialization. No
+  Date-object-vs-string or timezone mismatch between the write side and
+  the TV's read/filter side.
+- **RLS check:** the insert uses the service-role key (bypasses RLS
+  entirely); the TV/dashboard read uses the anon key, subject to RLS. The
+  `appointments_select_all` policy (`0001_init.sql:120-122`) is `for
+  select using (true)` — fully permissive — so the anon-key client is not
+  blocked from seeing a row the service-role key just inserted. No RLS
+  mismatch on the `appointments` table.
+- **Cross-check:** `DashboardBoard.tsx:5,18` (the rep's own dashboard) uses
+  the exact same `useAppointments()` hook as `TvBoard.tsx:37` — byte-for-
+  byte the same fetch/subscribe code path, no TV-specific branch anywhere
+  in the data layer. If the reported symptom is genuinely TV-specific
+  (the rep sees their own new appointment immediately but the TV doesn't),
+  there is no code-level mechanism that could produce that asymmetry,
+  since both surfaces are driven by the identical hook.
+
+### 4. Is a caching layer (SWR/React Query/etc.) involved?
+
+No such dependency exists. `package.json` (`dependencies`) lists only
+`@supabase/ssr`, `@supabase/supabase-js`, `bcryptjs`, `clsx`, `date-fns`,
+`jose`, `next`, `react`, `react-dom` — no SWR, no React Query, no other
+data-fetching/caching library. `useAppointments()`/`useReps()`/
+`useTvSettings()` (`useLiveData.ts`) are raw `useState`, populated
+directly by Supabase client calls with no intermediate cache or stale-
+revalidation window. This hypothesis does not apply to this codebase —
+stated explicitly rather than inventing a caching bug that isn't there.
+
+### Conclusion: no code-level bug found for the reported symptom
+
+All four investigation points check out. The Realtime subscription is
+real, unfiltered, targets the correct table, matches the installed SDK's
+actual API surface, the insert path writes to the same table/columns in
+the same format the TV reads, RLS permits the anon key to see the new
+row, and there is no caching layer to introduce staleness. **No fix was
+applied to `useLiveData.ts`, `TvBoard.tsx`, `AppointmentModal.tsx`, or the
+appointments API route** — per this task's own instruction, a fix was not
+forced onto code that isn't broken.
+
+### Secondary finding (unrelated to the reported symptom — documented, not fixed)
+
+While tracing every `postgres_changes` subscription for this pass, one
+genuine, verifiable Realtime-delivery gap was found on a **different**
+table: `useReps()` (`useLiveData.ts:6-38`) subscribes to `postgres_changes`
+on `table: "users"` — but `0001_init.sql` only adds `public.appointments`
+and `public.tv_settings` to the `supabase_realtime` publication
+(`:131-132`); `public.users` is never added. A table that isn't in the
+publication cannot emit logical-replication change events at all, so
+`useReps()`'s channel can structurally never receive an event — the rep
+list only ever refreshes on next page load, never live. Separately,
+`public.users` also has RLS enabled with **zero** SELECT policies for
+anon/authenticated (deliberate, to keep `pin_hash` off the wire — the
+`reps` view exists specifically so the browser never queries `users`
+directly), which would independently block Realtime delivery to the anon
+role even if the table were added to the publication, since Supabase
+Realtime evaluates the subscriber's RLS before broadcasting a
+`postgres_changes` event.
+
+This is real, but **it does not explain the reported symptom** — it
+affects live sync of the *rep list* (a new/edited rep's name, color, or
+active flag), not appointments, and `AppointmentCard.tsx:44,82-85` already
+degrades gracefully when a `rep` lookup misses (`rep?.color_hex ?? "#948b80"`,
+`"Unassigned"` fallback), so a stale `reps` list does not hide or crash
+appointment cards. **Not fixed in this pass**: a safe fix needs either
+Postgres 15+ column-filtered publication (`ALTER PUBLICATION ... ADD TABLE
+public.users (id, username, display_name, role, color_hex, photo_url,
+active, created_at)`, explicitly excluding `pin_hash`) paired with a
+matching SELECT policy — and this sandbox has no live database connection
+to confirm the project's Postgres version or to test that such a change
+doesn't leak `pin_hash` before shipping it. Touching RLS/publication on
+the table holding password hashes without the ability to verify the
+result live is exactly the kind of change that should not be made blind;
+flagging it for a follow-up pass with live DB access instead.
+
+### What was not verified (and still needs to happen)
+
+**Live two-tab verification was not performed in this sandbox** — this
+environment has no network route to the Supabase host (org egress
+allowlist), so `npm run dev` cannot run, no browser tab could be opened,
+and no appointment was actually created and watched appear on a second
+tab/TV view. Everything above is a code-reading conclusion, not an
+observation. The original ask — "create an appointment in one tab, confirm
+it appears on TV in another within 2 seconds" — still needs to happen,
+either once network access exists in a sandbox or by the user running it
+themselves. If, when actually tested live, the TV still doesn't update,
+the fault is almost certainly **not** in the code paths checked above, and
+is one of:
+
+- **Realtime not enabled for the `appointments` table in the live
+  Supabase project dashboard**, independent of the migration file
+  (Database → Replication → confirm `appointments` is toggled on for the
+  `supabase_realtime` publication in the actual running project, not just
+  in `0001_init.sql` — migrations can drift from what was actually applied
+  to a given project, especially if `0001_init.sql` was edited after the
+  project was first provisioned).
+- **RLS policy actually applied to the live database differs from the
+  migration file** — e.g. someone edited `appointments_select_all` (or
+  disabled/re-enabled RLS) directly in the Supabase dashboard's SQL editor
+  without updating the migration file to match.
+- **A stale/suspended browser tab.** If the TV tab was left open for a
+  long time, some browsers throttle or suspend background WebSocket
+  connections (especially on TV/kiosk hardware or aggressive power-saving
+  modes) without visibly erroring; a hard refresh would restore the
+  connection. This is exactly the class of risk Phase 5 already flagged
+  for a multi-hour soak test.
+- **The deployed build is older than this branch.** If the TV is pointed
+  at a previously-deployed build that predates the Phase 1 day-rollover
+  fix or any Realtime-adjacent change, symptoms could look like a
+  Realtime bug but actually be a stale-deployment issue — confirm the TV
+  is loading the current build.
+- **Realtime quota/connection-limit exhaustion** on the Supabase project
+  (free-tier concurrent-connection caps can silently drop new
+  subscriptions) — check Supabase project logs/usage during a live test.
+
+None of the above can be ruled out or confirmed without live access to
+the running Supabase project and a real browser, which this pass did not
+have.
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors (no code changes were made this
+  pass, so this reconfirms the pre-existing clean baseline).
+- `npx eslint .` — clean, no warnings or errors (same).
