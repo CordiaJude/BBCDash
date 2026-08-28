@@ -23,12 +23,11 @@
 alter table public.users rename column username to email;
 alter table public.users rename column pin_hash to password_hash;
 
--- The `reps` view was defined against the old column names — recreate it
--- against the new ones. (Postgres does not auto-propagate a base-table
--- column rename into a view built with `select *`-style explicit column
--- lists, so this must be redefined explicitly.)
-create or replace view public.reps as
-  select id, email, display_name, role, color_hex, photo_url, active, created_at
-  from public.users;
-
-grant select on public.reps to anon, authenticated;
+-- The `reps` view (0001_init.sql) was defined as `select id, username, ...`
+-- with no alias, so its own output column is literally named "username" —
+-- independent of the base table's column name. Postgres already updated
+-- the view's internal reference when the table column above was renamed
+-- (so the view still works), but a view's own column names only change via
+-- an explicit rename — `create or replace view` cannot rename an existing
+-- output column (errors 42P16), only append new ones or change types.
+alter view public.reps rename column username to email;
