@@ -24,11 +24,14 @@ export function StatusToggle({
   value,
   onChange,
   disabled,
+  showLabel = true,
 }: {
   label: string;
   value: TriState;
   onChange: (next: TriState) => void;
   disabled?: boolean;
+  /** Hide the text label under the circle — used in table rows, where the column header already labels it (matches the reference: only the header carries text, data rows show just the circle). */
+  showLabel?: boolean;
 }) {
   const style =
     value === "yes"
@@ -64,7 +67,7 @@ export function StatusToggle({
         )}
         {value === "no" && <span className="text-sm font-bold leading-none">?</span>}
       </span>
-      <span className="text-label">{label}</span>
+      {showLabel && <span className="text-label">{label}</span>}
     </button>
   );
 }

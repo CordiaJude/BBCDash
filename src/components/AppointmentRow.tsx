@@ -15,7 +15,7 @@ import clsx from "clsx";
  * per-status column layouts, where a full multi-column table header
  * doesn't fit a narrow column.
  */
-export const ROW_GRID = "minmax(108px,1fr) minmax(88px,0.8fr) minmax(170px,1.8fr) minmax(170px,1.8fr) repeat(3, 60px)";
+export const ROW_GRID = "minmax(108px,1fr) minmax(88px,0.8fr) minmax(170px,1.8fr) minmax(170px,1.8fr) repeat(3, minmax(96px,1fr))";
 
 function CalendarIcon() {
   return (
@@ -51,6 +51,23 @@ function CarIcon() {
     </svg>
   );
 }
+function ConfirmedIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18" strokeLinecap="round" />
+      <path d="M8 15l2.5 2.5L16 12" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function FlagIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 21V4" strokeLinecap="round" />
+      <path d="M5 4h12l-3 4 3 4H5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function AppointmentTableHeader() {
   return (
@@ -67,9 +84,15 @@ export function AppointmentTableHeader() {
       <span className="flex items-center gap-1.5">
         <CarIcon /> Vehicle
       </span>
-      <span className="text-center">Confirmed</span>
-      <span className="text-center">Show</span>
-      <span className="text-center">Sold</span>
+      <span className="flex items-center justify-center gap-1.5 text-center">
+        <ConfirmedIcon /> Appt Confirmed
+      </span>
+      <span className="flex items-center justify-center gap-1.5 text-center">
+        <PersonIcon /> Appt Show
+      </span>
+      <span className="flex items-center justify-center gap-1.5 text-center">
+        <FlagIcon /> Acquired
+      </span>
     </div>
   );
 }
@@ -154,6 +177,7 @@ export function AppointmentRow({
           value={appt.confirmed_status}
           disabled={!editable}
           onChange={(v) => onStatusChange?.("confirmed_status", v)}
+          showLabel={false}
         />
       </div>
       <div className="flex justify-center">
@@ -162,6 +186,7 @@ export function AppointmentRow({
           value={appt.showed_status}
           disabled={!editable}
           onChange={(v) => onStatusChange?.("showed_status", v)}
+          showLabel={false}
         />
       </div>
       <div className="flex justify-center">
@@ -170,6 +195,7 @@ export function AppointmentRow({
           value={appt.sold_status}
           disabled={!editable}
           onChange={(v) => onStatusChange?.("sold_status", v)}
+          showLabel={false}
         />
       </div>
     </div>
