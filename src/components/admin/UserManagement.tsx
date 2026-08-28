@@ -67,6 +67,27 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
     await fetch(`/api/users/${rep.id}/photo`, { method: "POST", body: form });
   }
 
+  async function deleteRep(rep: Rep) {
+    if (
+      !confirm(
+        `Permanently delete ${rep.display_name}'s account? This also deletes every appointment assigned to them. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    const res = await fetch(`/api/users/${rep.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to delete account.");
+      return;
+    }
+    // The rep list's realtime channel doesn't reliably fire (users table
+    // isn't in the Realtime publication — a known, separately-tracked
+    // gap), so force a reload rather than leave a deleted account
+    // visually lingering in the list.
+    window.location.reload();
+  }
+
   return (
     <div className="pt-6">
       <div className="flex items-center justify-between mb-4">
@@ -154,6 +175,12 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
                 className="field px-2.5 py-1.5 text-xs hover:bg-[var(--hover-surface-strong)]"
               >
                 {r.active ? "Deactivate" : "Reactivate"}
+              </button>
+              <button
+                onClick={() => deleteRep(r)}
+                className="field px-2.5 py-1.5 text-xs text-[var(--bad)] hover:bg-[var(--hover-surface-strong)]"
+              >
+                Delete
               </button>
             </div>
           </div>

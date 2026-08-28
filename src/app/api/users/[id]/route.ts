@@ -40,3 +40,44 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ rep: data });
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession();
+  if (!session || session.role !== "manager") {
+    return NextResponse.json({ error: "Manager access required." }, { status: 403 });
+  }
+  const { id } = await params;
+
+  if (id === session.id) {
+    return NextResponse.json({ error: "You can't delete your own account." }, { status: 400 });
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: target, error: fetchError } = await supabase
+    .from("users")
+    .select("id, role, active")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchError || !target) {
+    return NextResponse.json({ error: "Account not found." }, { status: 404 });
+  }
+
+  if (target.role === "manager" && target.active) {
+    const { count } = await supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "manager")
+      .eq("active", true);
+    if ((count ?? 0) <= 1) {
+      return NextResponse.json({ error: "Can't delete the last active manager." }, { status: 400 });
+    }
+  }
+
+  // Deleting a rep cascades to delete their appointments too (see
+  // supabase/migrations/0001_init.sql: appointments.rep_id ... on delete
+  // cascade) — the UI warns about this before calling here.
+  const { error } = await supabase.from("users").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
