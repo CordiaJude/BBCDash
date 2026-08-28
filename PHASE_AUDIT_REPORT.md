@@ -129,3 +129,166 @@ separate follow-up passes — one per remaining phase — each with its own
 `tsc`/`eslint`/`build` verification and its own commit, rather than
 attempted in a single pass. This report intentionally avoids claiming
 completion of work that was not actually done.
+
+## Phase 0/1 Audit — Remaining Components
+
+Deep read completed for all previously-unreviewed files: `AppointmentModal.tsx`,
+`AppointmentCard.tsx`, `DashboardBoard.tsx`, `StatusToggle.tsx`,
+`admin/AdminBoard.tsx`, `admin/Recap.tsx`, `admin/TvControls.tsx`,
+`admin/UserManagement.tsx`, `RepAvatar.tsx`, `LinkButtons.tsx`, `Nav.tsx`,
+`app/dashboard/page.tsx`, `app/dashboard/layout.tsx`, `app/admin/page.tsx`,
+`app/login/page.tsx`, `app/tv/page.tsx`.
+
+1. **Tri-state status control** — OK, with a design note. Each of
+   Confirmed/Showed/Sold is an *independent* tri-state toggle
+   (`pending → yes → no → pending`, `src/components/StatusToggle.tsx:3-7`),
+   not a single 4-step gated sequence. `AppointmentCard.tsx:82-101` renders
+   all three toggles simultaneously and each calls `onStatusChange` directly
+   — there is no ordering enforcement, so a rep *can* mark "Sold = yes"
+   without ever touching Confirmed/Showed. This is how the app is built
+   end-to-end (matches the API's field-level PATCH, no cross-field
+   validation there either), so it is not a code bug, but it does mean the
+   literal "blank → confirmed → showed → sold" linear state machine implied
+   by the task description does not exist in this codebase — flagging as a
+   product/requirements question, not fixing as a bug.
+   "Un-checking" (returning to blank/pending) works correctly: the cycle
+   `yes → no → pending` reaches blank as the third click
+   (`StatusToggle.tsx:5-7`), and `nextTriState` persists it via the same
+   `onChange`/PATCH path as any other state, so blank is a fully persisted
+   state, not just a UI default.
+2. **Add/edit appointment modal — bug found and fixed.**
+   `DashboardBoard.tsx` computed a `conflictKeys` set intended to flag
+   double-booked appointments, but the key was `date|time` with a `Set` of
+   `rep_id`s, and it flagged a conflict when the set size was `> 1` — i.e.
+   it fired whenever **two different reps** each had their own appointment
+   at the same time slot (completely normal on a multi-rep floor) and
+   **stayed silent** for the real conflict case, the same rep double-booked
+   at the same time (their own `rep_id` set has size 1 no matter how many
+   appointments they have there). Fixed by keying on
+   `rep_id|date|time` and counting occurrences per rep, so the "conflict"
+   badge (`AppointmentCard.tsx:55-58`, the `ring-1 ring-[#e0654f]/60` style)
+   now only lights up when one rep genuinely has two overlapping
+   appointments. See `src/components/DashboardBoard.tsx:56-66` (logic) and
+   `:138` (usage). Beyond that, the modal does not otherwise block saving
+   an overlapping time — it does not crash or corrupt data either way,
+   since each appointment is its own row; the only feedback is the (now
+   correct) visual badge, not a hard block. 15-min slot generation
+   (`src/lib/time.ts:35-45`, 7:00 AM–8:00 PM) is used correctly by
+   `AppointmentModal.tsx:7,136-149`.
+3. **Appraisal/vAuto/CRM links** — OK. Editable in
+   `AppointmentModal.tsx:163-201` (three URL inputs plus a CRM label
+   `<select>` for VAN/DealerCentric), persisted via the same PATCH/POST
+   payload as other fields (`AppointmentModal.tsx:56-67`), and rendered as
+   real `<a target="_blank" rel="noopener noreferrer">` links with
+   `stopPropagation` (so clicking a link doesn't also open the edit modal)
+   in `src/components/LinkButtons.tsx:3-17`. `LinkButtons` only renders
+   buttons for links that are actually set (`LinkButtons.tsx:20-21`), so no
+   dead/empty buttons.
+4. **Rep color coding** — OK in these components. `RepAvatar.tsx` and
+   `Nav.tsx`/`AppointmentCard.tsx` only *consume* `rep.color_hex` (as a
+   border/ring/text color); none of the reviewed components do their own
+   color assignment. `src/lib/colors.ts:15-19` (`nextAvailableColor`, used
+   server-side at rep creation, not in these files) still has the
+   already-documented theoretical duplicate-color wraparound past 8 active
+   reps — unchanged from the prior pass's note, not re-fixed here since it
+   is outside the reviewed component set and not a realistic team-size
+   issue.
+5. **Manager-only actions — client/server gating cross-checked, consistent.**
+   - Admin route is server-gated: `src/app/admin/page.tsx:8` redirects
+     non-managers to `/dashboard` before `AdminBoard` ever renders, so a rep
+     cannot reach `UserManagement`/`TvControls` at all (no "sees the button,
+     gets silently 403'd" case here).
+   - `Nav.tsx:20` only adds the "Admin" tab link for `user.role ===
+     "manager"`, matching the server redirect — a rep never even sees the
+     nav entry.
+   - `AppointmentModal.tsx`: delete button only rendered for
+     `isEdit && isManager` (`:216-224`), matching the DELETE route's
+     manager-only enforcement noted in the prior pass. The rep-assignment
+     `<select>` is only rendered for managers (`:151-161`), and the Save
+     button itself is gated on `canEditAll = isManager || !isEdit ||
+     appointment?.rep_id === user.id` (`:47,230`) — a non-owning rep who
+     opens someone else's appointment (the card's `onClick` is unconditional
+     in `DashboardBoard.tsx:137/161`) gets a fully read-only modal with no
+     Save button at all, rather than a Save button that then 403s. This is
+     the correct pattern the task was checking for.
+   - `StatusToggle`s in `AppointmentCard` are disabled via
+     `editable={user.role === "manager" || a.rep_id === user.id}`
+     (`DashboardBoard.tsx:135,159`), so a rep can't even click a status
+     toggle on someone else's appointment to trigger a silent 403.
+6. **Up Next 30-minute glow** — OK, implemented exactly as expected.
+   `src/components/AppointmentCard.tsx:10-17` (`upNextGlowClass`) computes
+   `minutesUntil(appt.appt_date, appt.appt_time, now)` using the `now` prop
+   (sourced from the ticking `useNowTick`, confirmed working in the prior
+   pass) versus the appointment's own date/time, gates on `0 <= mins <= 30`,
+   and additionally distinguishes `<= 15` minutes as
+   `up-next-glow-urgent` vs. `up-next-glow` — a nicer two-tier version of
+   what was asked for. It also correctly stops glowing once all three
+   status fields are non-pending (`isComplete` check, `:11-13`), so a
+   fully-processed appointment doesn't keep glowing.
+7. **Mobile usability** — reviewed via Tailwind classes only (no live
+   render, per sandbox constraint). Overall looks reasonable, not obviously
+   broken:
+   - Layout: `AppointmentModal` uses `grid-cols-1 sm:grid-cols-2` (stacks on
+     mobile), `DashboardBoard`'s header uses `flex-wrap`, `Nav.tsx` hides
+     the display name at `sm:` and keeps the avatar+logout visible on
+     narrow screens (`Nav.tsx:42`). No fixed pixel container widths found
+     that would force horizontal page scroll; wide-looking elements
+     (`TvControls.tsx:86` offsets input `w-48`) sit inside `flex flex-wrap`
+     containers so they wrap instead of overflowing.
+   - Touch targets: `StatusToggle.tsx:40` renders a 32×32px
+     (`w-8 h-8`) tap target for Confirm/Show/Sold — below the common
+     44×44px guideline. Three of these sit side-by-side
+     (`AppointmentCard.tsx:82-101`) next to a `cursor-pointer` card that
+     also opens the edit modal on click, so on a small phone there's real
+     risk of mis-tapping the card instead of a toggle, or vice versa.
+     This is a real usability rough edge but is a CSS/sizing change
+     (explicitly out of scope for this pass per the Phase 2 boundary), so
+     it is called out here rather than changed.
+   - The PIN pad on `login/page.tsx:89-125` uses `py-3.5` buttons in a
+     `grid-cols-3` layout, which gives comfortably large (full-width-cell)
+     tap targets on mobile — no issue there.
+   - No horizontal-scroll traps identified in any of the reviewed files.
+8. **Login page PIN pad** — OK, verified in code.
+   `pressDigit` (`login/page.tsx:39-45`) appends a digit, and once
+   `next.length === 4` it calls `submit(next)` automatically — true
+   auto-submit on the 4th digit, no separate submit button needed. On a
+   failed login, `submit()` sets `error` from the API response and resets
+   `pin` to `""` (`:25-29`) so the dots clear and the message shows; typing
+   a new digit via `pressDigit` also clears the error (`:43`) so stale
+   errors don't linger once the user starts a fresh attempt. `backspace`
+   and `Clear` are also present and working.
+9. **Concurrent-edit handling at the component level** — OK, no unsafe
+   optimistic overwrite found. `DashboardBoard.setStatus` (`:71-77`) and
+   `AppointmentModal.save` (`:49-85`) both just `fetch(...PATCH)` and rely
+   on the Realtime subscription (`useAppointments`, reviewed in the prior
+   pass) to reconcile the displayed list from the server afterward — there
+   is no local `setState` that optimistically writes a whole appointment
+   object over what Realtime might independently deliver, so there's no
+   component-level path that could clobber a concurrent server update with
+   stale local state. Consistent with the prior pass's finding that the
+   PATCH route is field-level, last-write-wins by design.
+
+### Fixes made this sub-pass
+
+1. `src/components/DashboardBoard.tsx:56-66,138` — fixed the
+   double-booking "conflict" detector, which had its logic inverted (see
+   item 2 above): it now flags the same rep being double-booked at the
+   same date+time, instead of flagging two different reps each having
+   their own separate appointment at the same time.
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors.
+- `npx eslint .` — clean, no warnings or errors.
+
+### Still open / not fixed (by design, not oversight)
+
+- Cross-field status ordering (item 1) — no code bug, but flagged as a
+  product decision: the app currently allows any of Confirmed/Showed/Sold
+  to be set independently and out of order.
+- `StatusToggle` touch target size (item 7) — real mobile usability rough
+  edge, left alone because it's a CSS/sizing change and this pass's scope
+  explicitly excludes visual/design changes (Phase 2's job).
+- `src/lib/colors.ts` duplicate-color wraparound past 8 reps — pre-existing
+  note from the prior pass, not in the reviewed component set, not
+  re-touched.

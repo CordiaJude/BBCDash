@@ -54,14 +54,15 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
   }, [appointments, scope, user.id]);
 
   const conflictKeys = useMemo(() => {
-    const counts = new Map<string, Set<string>>();
+    // A conflict is the SAME rep double-booked at the same date+time —
+    // not merely two different reps each having their own appointment then.
+    const counts = new Map<string, number>();
     for (const a of appointments) {
-      const key = `${a.appt_date}|${a.appt_time}`;
-      if (!counts.has(key)) counts.set(key, new Set());
-      counts.get(key)!.add(a.rep_id);
+      const key = `${a.rep_id}|${a.appt_date}|${a.appt_time}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     const conflicted = new Set<string>();
-    for (const [key, repsSet] of counts) if (repsSet.size > 1) conflicted.add(key);
+    for (const [key, count] of counts) if (count > 1) conflicted.add(key);
     return conflicted;
   }, [appointments]);
 
@@ -135,7 +136,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
                 editable={user.role === "manager" || a.rep_id === user.id}
                 onStatusChange={(field, v) => setStatus(a, field, v)}
                 onClick={() => openEdit(a)}
-                hasConflict={conflictKeys.has(`${a.appt_date}|${a.appt_time}`)}
+                hasConflict={conflictKeys.has(`${a.rep_id}|${a.appt_date}|${a.appt_time}`)}
                 shimmer={shimmerIds.has(a.id)}
               />
             </div>
