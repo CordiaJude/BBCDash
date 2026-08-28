@@ -446,3 +446,122 @@ so TV legibility at distance is not a contrast-vs-size tradeoff here.
 - `src/lib/colors.ts`'s 8-color palette was left as-is (see rep-color
   section above for why, and for the redesign that routes around its
   contrast problem rather than editing live-data-adjacent constants).
+
+## Phase 2.1 — Bright White Palette Adjustment
+
+Follow-up pass on top of Phase 2's liquid-glass system: the light theme was
+shifted from a "warm atmospheric off-white" to a bright, clean white —
+"the feel of a whiteboard's surface." Only `:root` (light) tokens were
+touched; the `prefers-color-scheme`/`data-theme="dark"` variant is
+unchanged except for adding the new `--shadow-color-tv` token so the
+variable exists in both themes.
+
+### What changed
+
+- `--background`: `#f6f1e9` → `#ffffff`. `--background-alt`: `#efe7da` →
+  `#f7f7f8`.
+- Removed the three warm/cool radial gradients from `body` in light mode
+  entirely (flat `var(--background)` now); the gradients are preserved
+  but re-tuned to cool tones and gated behind the dark-mode media query
+  only, so light mode reads as flat, glare-free white and dark mode keeps
+  its atmospheric depth.
+- Neutrals darkened for higher, more consistent contrast against the
+  brighter base: `--foreground` `#2a2420`→`#16181c`, `--foreground-muted`
+  `#6b6157`→`#52565c`, `--foreground-faint` `#6f6459`→`#4b4f55`,
+  `--pending-fg` `#766c60`→`#4b4f55` (unified with foreground-faint —
+  previously the lightest, most contrast-marginal token in the system).
+- Glass tint lightened/de-hazed: `--panel-glass` alpha 0.55→0.72,
+  `--panel-glass-strong` 0.72→0.85, `.glass-input` fill 0.5→0.6 (0.72→0.85
+  on focus). Blur/border/shadow (the actual "glass" identity) kept
+  unchanged in mechanism, just re-tinted neutral instead of warm:
+  `--border-glass`/`--border-glass-strong` now `rgba(20,20,26,…)` instead
+  of `rgba(60,48,32,…)`.
+- Shadows lightened and neutralized: `--shadow-color`
+  `rgba(60,48,32,0.14)` → `rgba(20,20,26,0.09)` — a soft lift, not a dark
+  drop shadow.
+- `--ok` `#1f8f5f`→`#167a4c` and `--bad` `#c8402a`→`#b8391f`: both
+  darkened slightly so the StatusToggle icon-on-tint-chip combination
+  clears WCAG non-text contrast (3:1) with real margin against the
+  brighter base (see table below). Both stay clearly saturated — this is
+  a contrast fix, not a desaturation.
+- `src/components/StatusToggle.tsx`: its hardcoded chip-fill/ring rgba
+  values (previously literal `31,143,95` / `200,64,42`) were updated to
+  match the new `--ok`/`--bad` hexes so the chip tint and the icon color
+  stay in sync.
+- `src/lib/colors.ts`'s 8-color rep palette is untouched — those hexes
+  stay fully saturated and are only ever expressed as a border/glow
+  accent (never as text), per the Phase 2 decision. Re-verified below
+  that they still read clearly against the new pure-white base.
+
+### WCAG contrast recomputation (light theme)
+
+Because `--background` is now pure `#ffffff` and light-mode glass panels
+sit directly on that flat body (no gradient showing through), a
+translucent-white panel composited over `#ffffff` composites back to
+`#ffffff` exactly — so "text on background" and "text on glass panel"
+collapse to the same number for every token below.
+
+| Foreground token | Hex | On (composited) | Ratio | Needs | Result |
+|---|---|---|---|---|---|
+| `--foreground` | `#16181c` | `#ffffff` | ~19:1 | 4.5:1 | Pass (wide margin) |
+| `--foreground-muted` | `#52565c` | `#ffffff` | 7.38:1 | 4.5:1 | Pass |
+| `--foreground-faint` (`.text-label`, small uppercase) | `#4b4f55` | `#ffffff` | 8.24:1 | 4.5:1 | Pass |
+| `--pending-fg` (on `.glass-panel`/pending chip) | `#4b4f55` | `#ffffff` | 8.24:1 | 4.5:1 | Pass |
+| `--accent` (`#3568d4`) | `#3568d4` | `#ffffff` | 5.15:1 | 4.5:1 | Pass |
+
+StatusToggle icon-on-tint-chip (icon glyphs count as UI graphics, 3:1
+threshold under WCAG 1.4.11, not the 4.5:1 text threshold):
+
+| State | Icon color | Chip fill (composited over `#fff`) | Ratio | Needs | Result |
+|---|---|---|---|---|---|
+| Yes | `--ok` `#167a4c` | `rgba(22,122,76,0.14)` → `#dee9e2` | 4.41:1 | 3:1 | Pass, +text-AA-adjacent margin |
+| No | `--bad` `#b8391f` | `rgba(184,57,31,0.14)` → `#f5e3df` | 4.66:1 | 3:1 | Pass, +text-AA-adjacent margin |
+
+(Prior Phase 2 values `#1f8f5f`/`#c8402a` at the old chip alphas measured
+~3.35:1 and ~4.07:1 against the warmer base — both technically legal for
+icons but the green sat close to the 3:1 floor. The 2.1 hexes carry more
+margin against the brighter white.)
+
+### TV-display glare/legibility check
+
+`src/components/tv/TvBoard.tsx` renders `AppointmentCard` with `tv` large
+type and, in `columns_per_rep`/`columns_by_status` layouts, `.glass-input`
+column headers — all on the same bright-white base. Concern: a pure-white
+`.glass-panel` fill on a pure-white body, viewed from 10+ feet under
+bright showroom lighting, has almost no fill-vs-background luminance
+delta once glare is factored in — panels could read as a flat white void
+with only the rep-color left border for shape.
+
+Adjustment made: added a `.glass-panel-tv` modifier (new `--shadow-color-tv`
+token, `rgba(20,20,26,0.20)` light / `rgba(0,0,0,0.55)` dark — notably
+heavier than the base `--shadow-color` but still neutral-gray, not warm)
+that gives TV-surface panels a firmer hairline border
+(`--border-glass-strong` instead of `--border-glass`) and a heavier, more
+defined drop shadow than the desktop card gets. Wired into:
+- `AppointmentCard` when `tv` is true (both the CSS class and the inline
+  per-card `boxShadow`, which otherwise would have overridden the class
+  with the lighter desktop shadow).
+- The TV board's top date/time header bar.
+- The per-rep and per-status column header chips in the two grid layouts
+  (border-color and shadow strengthened via inline style, keeping each
+  rep's color-coded left border intact by ordering `borderLeft` after
+  `borderColor` in the style object).
+
+This keeps the "bright, clean" mandate — no tint or warmth was
+reintroduced — while giving panels enough edge definition to hold their
+shape at a distance instead of dissolving into the white body behind
+them.
+
+### Rep-color / status-accent re-verification against pure white
+
+The 8-color `REP_COLOR_PALETTE` (`#4F8EF7`, `#E0654F`, `#3FB88A`,
+`#C99A3C`, `#9D6FE0`, `#3FAFC2`, `#E0578C`, `#7C9C4A`) and the
+`up-next-glow`/`up-next-glow-urgent` amber/red glow colors are used only
+as a left-border strip + soft box-shadow glow (decorative, non-text), so
+WCAG text-contrast thresholds don't apply — but they were re-checked
+visually against `#ffffff` rather than the old `#f6f1e9`: every hex in
+the palette is mid-to-high saturation and reads clearly as a distinct
+color chip on pure white (more so than on the warmer base, if anything,
+since there's no competing warm cast). No hue/saturation changes were
+needed or made to this palette.
+

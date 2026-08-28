@@ -76,7 +76,7 @@ export function TvBoard() {
         </div>
       )}
 
-      <div className="glass-panel px-6 py-4 mb-5 flex items-center justify-between">
+      <div className="glass-panel glass-panel-tv px-6 py-4 mb-5 flex items-center justify-between">
         <h1 className="text-headline text-2xl">Appointment Board</h1>
         <span className="tabular text-lg text-secondary">
           {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} ·{" "}
@@ -108,7 +108,7 @@ export function TvBoard() {
             .filter((r) => r.active)
             .map((r) => (
               <div key={r.id}>
-                <div className="glass-input px-3 py-2.5 mb-2 text-base text-headline flex items-center gap-2" style={{ borderLeft: `4px solid ${r.color_hex}` }}>
+                <div className="glass-input px-3 py-2.5 mb-2 text-base text-headline flex items-center gap-2" style={{ borderColor: "var(--border-glass-strong)", boxShadow: "0 6px 16px -10px var(--shadow-color-tv)", borderLeft: `4px solid ${r.color_hex}` }}>
                   {r.display_name}
                 </div>
                 <div className="space-y-2.5">
@@ -127,7 +127,12 @@ export function TvBoard() {
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(4, minmax(240px, 1fr))" }}>
           {STATUS_COLUMNS.map((col) => (
             <div key={col.key}>
-              <div className="glass-input px-3 py-2.5 mb-2 text-base text-headline text-center">{col.label}</div>
+              <div
+                className="glass-input px-3 py-2.5 mb-2 text-base text-headline text-center"
+                style={{ borderColor: "var(--border-glass-strong)", boxShadow: "0 6px 16px -10px var(--shadow-color-tv)" }}
+              >
+                {col.label}
+              </div>
               <div className="space-y-2.5">
                 {sorted
                   .filter((a) => statusBucket(a) === col.key)

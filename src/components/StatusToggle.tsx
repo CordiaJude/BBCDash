@@ -20,10 +20,10 @@ export function StatusToggle({
 }) {
   const style =
     value === "yes"
-      ? { bg: "rgba(31,143,95,0.16)", fg: "var(--ok)", ring: "rgba(31,143,95,0.55)" }
+      ? { bg: "rgba(22,122,76,0.14)", fg: "var(--ok)", ring: "rgba(22,122,76,0.55)" }
       : value === "no"
-        ? { bg: "rgba(200,64,42,0.14)", fg: "var(--bad)", ring: "rgba(200,64,42,0.55)" }
-        : { bg: "rgba(255,255,255,0.5)", fg: "var(--pending-fg)", ring: "var(--border-glass-strong)" };
+        ? { bg: "rgba(184,57,31,0.14)", fg: "var(--bad)", ring: "rgba(184,57,31,0.55)" }
+        : { bg: "rgba(255,255,255,0.6)", fg: "var(--pending-fg)", ring: "var(--border-glass-strong)" };
 
   return (
     <button

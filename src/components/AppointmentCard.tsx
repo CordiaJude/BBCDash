@@ -48,6 +48,7 @@ export function AppointmentCard({
       onClick={onClick}
       className={clsx(
         "glass-panel relative overflow-hidden transition-transform",
+        tv && "glass-panel-tv",
         tv ? "p-4 sm:p-5" : "p-3 sm:p-4",
         onClick && "cursor-pointer hover:-translate-y-0.5",
         glow,
@@ -56,7 +57,9 @@ export function AppointmentCard({
       )}
       style={{
         borderLeft: `${tv ? 6 : 4}px solid ${accent}`,
-        boxShadow: `-14px 0 26px -22px ${accent}, 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color)`,
+        boxShadow: tv
+          ? `-14px 0 26px -20px ${accent}, 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 32px -16px var(--shadow-color-tv)`
+          : `-14px 0 26px -22px ${accent}, 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color)`,
       }}
     >
       {hasConflict && (
