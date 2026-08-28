@@ -278,6 +278,89 @@ body {
   animation: up-next-glow 1.5s ease-in-out infinite;
 }
 
+/* ---- Entrance: new appointment fades + slides into place ---- */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.appt-card-enter {
+  animation: card-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Exit: appointment drops off at day rollover ---- */
+@keyframes card-fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.appt-fade-out {
+  animation: card-fade-out 900ms ease forwards;
+  pointer-events: none;
+}
+
+/* ---- Modal open/close: subtle scale + fade ---- */
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes modal-panel-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.97) translateY(4px); }
+}
+.modal-backdrop-in { animation: modal-backdrop-in 180ms ease both; }
+.modal-backdrop-out { animation: modal-backdrop-out 180ms ease both; }
+.modal-panel-in { animation: modal-panel-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.modal-panel-out { animation: modal-panel-out 160ms ease both; }
+
+/* ---- TV layout switch: cross-fade instead of a jump-cut ---- */
+@keyframes layout-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes layout-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.layout-fade-in { animation: layout-fade-in 260ms ease both; }
+.layout-fade-out { animation: layout-fade-out 200ms ease both; }
+
+/*
+  ---- prefers-reduced-motion: one shared gate for every CSS animation and
+  transition above (and the icon-btn/glass-hover transitions earlier in this
+  file). Collapses every declared animation/transition to effectively
+  instant rather than disabling individual rules by name, so new motion
+  added later is covered automatically. JS-driven timing that isn't purely
+  CSS (the modal's close-delay, the TV rollover fade-out's removal delay,
+  the FLIP reorder) is gated separately via the usePrefersReducedMotion
+  hook — see src/lib/usePrefersReducedMotion.ts.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: -0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

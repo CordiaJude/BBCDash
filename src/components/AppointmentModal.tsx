@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import type { Appointment, CrmLabel, Rep, SessionUser } from "@/lib/types";
 import { generateTimeSlots, todayISO } from "@/lib/time";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 
 const TIME_SLOTS = generateTimeSlots();
+const CLOSE_ANIM_MS = 180;
 
 export function AppointmentModal({
   user,
@@ -35,13 +37,27 @@ export function AppointmentModal({
   const [notes, setNotes] = useState(appointment?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+
+  // Subtle scale+fade exit: run the CSS exit animation, then actually
+  // unmount (via the caller-supplied callback) once it's finished.
+  function requestClose(cb: () => void) {
+    if (reducedMotion) {
+      cb();
+      return;
+    }
+    setClosing(true);
+    setTimeout(cb, CLOSE_ANIM_MS);
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose(onClose);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   const canEditAll = isManager || !isEdit || appointment?.rep_id === user.id;
@@ -77,7 +93,7 @@ export function AppointmentModal({
         setSaving(false);
         return;
       }
-      onSaved();
+      requestClose(onSaved);
     } catch {
       setError("Network error.");
       setSaving(false);
@@ -90,7 +106,7 @@ export function AppointmentModal({
     setSaving(true);
     const res = await fetch(`/api/appointments/${appointment.id}`, { method: "DELETE" });
     if (res.ok) {
-      onDeleted?.();
+      if (onDeleted) requestClose(onDeleted);
     } else {
       setSaving(false);
       setError("Failed to delete.");
@@ -98,9 +114,16 @@ export function AppointmentModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm ${
+        closing ? "modal-backdrop-out" : "modal-backdrop-in"
+      }`}
+      onClick={() => requestClose(onClose)}
+    >
       <div
-        className="glass-panel-strong w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6"
+        className={`glass-panel-strong w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 ${
+          closing ? "modal-panel-out" : "modal-panel-in"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold mb-4">{isEdit ? "Edit appointment" : "Add appointment"}</h2>
@@ -224,7 +247,10 @@ export function AppointmentModal({
             )}
           </div>
           <div className="flex gap-2">
-            <button onClick={onClose} className="glass-input px-4 py-2 text-sm hover:bg-[var(--hover-tint-strong)]">
+            <button
+              onClick={() => requestClose(onClose)}
+              className="glass-input px-4 py-2 text-sm hover:bg-[var(--hover-tint-strong)]"
+            >
               Cancel
             </button>
             {canEditAll && (

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Appointment, SessionUser, TriState } from "@/lib/types";
 import { useAppointments, useReps } from "@/lib/useLiveData";
 import { useNowTick } from "@/lib/useNowTick";
+import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { AppointmentCard } from "./AppointmentCard";
 import { AppointmentModal } from "./AppointmentModal";
 import { formatDateShort, todayISO } from "@/lib/time";
@@ -19,32 +20,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
   const [scope, setScope] = useState<"mine" | "everyone">("mine");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
-  const [shimmerIds, setShimmerIds] = useState<Set<string>>(new Set());
-
-  const prevCompleteRef = useRef<Map<string, boolean>>(new Map());
-  useEffect(() => {
-    const prev = prevCompleteRef.current;
-    const newlyDone: string[] = [];
-    for (const a of appointments) {
-      const done = isComplete(a);
-      if (done && prev.get(a.id) === false) newlyDone.push(a.id);
-      prev.set(a.id, done);
-    }
-    if (newlyDone.length) {
-      const start = setTimeout(() => setShimmerIds((s) => new Set([...s, ...newlyDone])), 0);
-      const end = setTimeout(() => {
-        setShimmerIds((s) => {
-          const next = new Set(s);
-          newlyDone.forEach((id) => next.delete(id));
-          return next;
-        });
-      }, 950);
-      return () => {
-        clearTimeout(start);
-        clearTimeout(end);
-      };
-    }
-  }, [appointments]);
+  const shimmerIds = useSoldShimmer(appointments);
 
   const repMap = useMemo(() => new Map(reps.map((r) => [r.id, r])), [reps]);
 
@@ -123,7 +99,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
           .slice()
           .sort((a, b) => (a.appt_date + a.appt_time).localeCompare(b.appt_date + b.appt_time))
           .map((a) => (
-            <div key={a.id}>
+            <div key={a.id} className="appt-card-enter">
               {scope === "everyone" && (
                 <div className="text-[10px] uppercase tracking-wide text-[var(--foreground-muted)] mb-0.5 ml-1">
                   {formatDateShort(a.appt_date)}
@@ -151,16 +127,18 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
           <h3 className="text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-2">Completed today</h3>
           <div className="space-y-2.5 opacity-80">
             {completedToday.map((a) => (
-              <AppointmentCard
-                key={a.id}
-                appt={a}
-                rep={repMap.get(a.rep_id)}
-                now={now}
-                compact
-                editable={user.role === "manager" || a.rep_id === user.id}
-                onStatusChange={(field, v) => setStatus(a, field, v)}
-                onClick={() => openEdit(a)}
-              />
+              <div key={a.id} className="appt-card-enter">
+                <AppointmentCard
+                  appt={a}
+                  rep={repMap.get(a.rep_id)}
+                  now={now}
+                  compact
+                  editable={user.role === "manager" || a.rep_id === user.id}
+                  onStatusChange={(field, v) => setStatus(a, field, v)}
+                  onClick={() => openEdit(a)}
+                  shimmer={shimmerIds.has(a.id)}
+                />
+              </div>
             ))}
           </div>
         </div>

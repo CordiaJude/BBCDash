@@ -565,3 +565,154 @@ color chip on pure white (more so than on the warmer base, if anything,
 since there's no competing warm cast). No hue/saturation changes were
 needed or made to this palette.
 
+## Phase 3 — Motion Layer
+
+CSS-only motion (no new runtime dependency). `framer-motion` is **not** a
+dependency (`package.json` confirmed clean of it before starting) and the
+whole layer — entrances, the FLIP reorder, cross-fades, the modal, the
+signature shimmer — is built with plain CSS `@keyframes`/`transition`
+plus small React hooks that only toggle classes and schedule/clear
+timers. No new package was added.
+
+### Per-requirement
+
+1. **Signature "sold" moment.** New shared hook
+   `src/lib/useSoldShimmer.ts` watches `appointments` and fires only when
+   a given appointment's `sold_status` transitions from not-`"yes"` to
+   `"yes"` (previously `DashboardBoard` triggered on *full* completion —
+   all three fields non-pending — which is not the same event and could
+   fire off a `confirmed`/`showed` change; that logic is now specifically
+   sold-gated). It returns a `Set<string>` of ids that should carry
+   `animate-completion-shimmer` (the pre-existing `AppointmentCard`
+   glass-glow keyframe from Phase 2) for ~950ms. Wired into both
+   `DashboardBoard` and, newly, `TvBoard` (which previously had no
+   shimmer at all) so the flourish is consistent rep-side and TV-side.
+   Confirmed/showed toggles intentionally get no special effect — they
+   just re-render through `StatusToggle`'s existing 100ms scale
+   transition.
+2. **New-appointment entrance.** `.appt-card-enter` (`card-enter`
+   keyframe: opacity 0→1 + `translateY(10px)`→`0`, 420ms) is applied to
+   the wrapping `<div key={a.id}>` around every rendered
+   `AppointmentCard` — `DashboardBoard`'s active and "completed today"
+   lists, and all three `TvBoard` layouts (single list, per-rep columns,
+   per-status columns). Because React keys these wrappers by stable
+   appointment id, the animation only replays when a node is freshly
+   inserted (a genuinely new appointment, or one that just moved into a
+   different list, e.g. dashboard's active→completed split), never on an
+   ordinary re-render of an existing card.
+3. **Sink-to-bottom animated reorder (TV).** New
+   `src/lib/useFlipAnimation.ts` — a small manual FLIP implementation
+   (no library): before each render it snapshots child
+   `getBoundingClientRect()`s keyed by `data-flip-id`, and after the DOM
+   updates it computes each item's position delta, sets an instant
+   `transform` to the old delta, forces a reflow, then transitions the
+   transform back to identity (500ms). Wired to `TvBoard`'s single-list
+   container (the primary "day list" view) via `singleListRef`, keyed on
+   the current render order's ids. The per-rep/per-status column layouts
+   get the entrance animation but not FLIP (their columns don't reorder
+   items the way the single list does — items move between columns
+   instead, which is already covered by the enter animation on
+   insertion).
+4. **Day-rollover fade-out (TV).** `TvBoard` now tracks which
+   appointment ids just dropped out of `weekAppts` (rollover past
+   `todayISO()`, or the record vanishing outright) in a `fadingOut: Map<id,
+   Appointment>` state. A dropped item is kept in the render list — with
+   `.appt-fade-out` (900ms fade + slight downward drift, `pointer-events:
+   none`) — for one more tick, then its own `setTimeout` deletes it from
+   the map. Every entry is removed by a timer scoped to that exact
+   appointment; nothing is left to accumulate.
+5. **Up Next glow.** Already implemented in Phase 2
+   (`up-next-glow`/`up-next-glow-urgent` keyframes, `AppointmentCard.tsx`
+   → `upNextGlowClass`) as a slow (2.6s) / medium (1.5s, ≤15min-out)
+   `ease-in-out infinite` box-shadow pulse — already the calm,
+   from-across-the-room read the requirement asks for, so left untouched
+   other than confirming it isn't jarring at either cadence.
+6. **Manager TV layout cross-fade.** `TvBoard` now holds
+   `displayLayout`/`layoutFadeClass` state separate from the live
+   `settings.layout_mode`. On a layout change it fades the current
+   content out (`layout-fade-out`, 200ms), swaps the rendered layout
+   branch, then fades the new one in (`layout-fade-in`, 260ms) — a
+   sequential cross-fade rather than an instant DOM swap. `TvControls`
+   itself needed no changes; it already just PATCHes `tv_settings`, and
+   `TvBoard` picks the new value up over its existing Realtime
+   subscription.
+7. **Modal open/close.** `AppointmentModal` gained a `closing` boolean
+   and a `requestClose(cb)` helper: closing (backdrop click, Escape,
+   Cancel, or a successful save/delete) sets `closing` — which swaps the
+   backdrop/panel classes to `modal-backdrop-out`/`modal-panel-out`
+   (fade + `scale(0.97)`) — and defers the actual `onClose`/`onSaved`/
+   `onDeleted` callback by the animation's duration (180ms) instead of
+   unmounting instantly. Opening plays the mirrored `-in` keyframes
+   (fade + `scale(0.96)→1`) on mount.
+8. **`prefers-reduced-motion`.** One shared mechanism, used everywhere:
+   - A single blanket rule at the bottom of `globals.css` —
+     `@media (prefers-reduced-motion: reduce) { *, *::before, *::after {
+     animation-duration: 0.001ms !important; transition-duration:
+     0.001ms !important; … } }` — collapses every CSS animation/transition
+     in the app (shimmer, up-next glow, card enter/exit, modal, layout
+     cross-fade, and any existing hover/press transitions) to effectively
+     instant. This is declarative and automatically covers any animation
+     added later, rather than an allowlist of class names.
+   - New `src/lib/usePrefersReducedMotion.ts` hook (lazy-initialized from
+     `matchMedia`, with a `change` listener cleaned up on unmount) for the
+     handful of places where *JS*, not CSS, controls timing: the modal's
+     close-delay, the TV rollover fade-out's removal delay, the layout
+     cross-fade's swap delay, and gating the FLIP hook on/off. Every one
+     of those call sites branches on this hook to use a 0ms delay instead
+     of the animated one — so reduced-motion truly means an immediate
+     state change, not just a faster CSS transition underneath a still-
+     staged JS sequence.
+   No per-component ad-hoc `matchMedia` checks were added outside this
+   hook.
+
+### Leak-risk review (code-level; no live/soak test possible in-sandbox)
+
+- **`DashboardBoard`'s old shimmer tracking** (`prevCompleteRef: Map`)
+  never pruned entries for appointments that left the list — over a
+  multi-day session that map would grow without bound. Replaced by
+  `useSoldShimmer`, which now explicitly deletes any id from its internal
+  `prevSoldRef` map that is no longer present in the current
+  `appointments` array on every effect run.
+- **`TvBoard`'s new `fadingOut` map** is the one new piece of
+  animation-triggered state that could in principle grow (a "recently
+  dropped" id list) — verified every entry is deleted by its own
+  `setTimeout` (cleared/rescheduled correctly via the effect's cleanup
+  function), so it cannot accumulate across a long TV session.
+- **All new `setInterval`/`setTimeout` usage** — `useSoldShimmer`,
+  `useFlipAnimation` (one-shot `requestAnimationFrame`-free; it uses
+  synchronous reflow forcing, not a raf loop), the `TvBoard` rollover and
+  layout-crossfade effects, and `AppointmentModal`'s `requestClose` — was
+  checked for matching cleanup: every effect that schedules a timer
+  returns a cleanup function that clears it, so no timer can fire against
+  an unmounted component or stale closure survive a re-render.
+- **`usePrefersReducedMotion`'s `matchMedia` listener** is removed in its
+  effect's cleanup — verified no listener leak.
+- **No new `addEventListener` on `window`/`document`** was introduced
+  beyond the pre-existing `AppointmentModal` Escape-key listener (already
+  cleaned up, now just calls `requestClose` instead of `onClose`
+  directly).
+- `eslint`'s `react-hooks/set-state-in-effect` rule flagged three
+  synchronous `setState` calls inside effect bodies during development
+  (`useSoldShimmer`, `usePrefersReducedMotion`, `TvBoard`'s layout-fade
+  effect); all three were fixed — either by lazy `useState` initializers
+  or by deferring the `setState` through a (cleaned-up) `setTimeout(…, 0)`
+  — rather than suppressed, so the fix is a real behavior change, not a
+  lint bypass.
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors.
+- `npx eslint .` — clean, no warnings or errors.
+- `npx next build` / real browser / TV soak test — **not run**, per the
+  standing sandbox constraint (no Supabase network access). Everything
+  above is verified by type-checking, linting, and manual code review
+  only. In particular:
+  - The FLIP reorder, the rollover fade-out timing against real Realtime
+    updates, and the layout cross-fade have not been visually confirmed
+    in a browser.
+  - Real frame-rate/memory behavior over a multi-hour TV run has **not**
+    been measured and still needs a live soak test once network access
+    to Supabase exists — this pass only rules out the concrete,
+    inspectable leak patterns (unbounded maps, uncancelled timers,
+    unremoved listeners) via code review, not empirical profiling.
+
