@@ -26,6 +26,7 @@ export function AppointmentCard({
   now,
   editable = true,
   compact = false,
+  tv = false,
 }: {
   appt: Appointment;
   rep: Rep | undefined;
@@ -36,42 +37,52 @@ export function AppointmentCard({
   now: Date;
   editable?: boolean;
   compact?: boolean;
+  /** Bolder, larger type for legibility from ~10ft on the TV display. */
+  tv?: boolean;
 }) {
   const glow = upNextGlowClass(appt, now);
-  const accent = rep?.color_hex ?? "#8b93a7";
+  const accent = rep?.color_hex ?? "#948b80";
 
   return (
     <div
       onClick={onClick}
       className={clsx(
-        "glass-panel relative overflow-hidden p-3 sm:p-4 transition-transform",
+        "glass-panel relative overflow-hidden transition-transform",
+        tv ? "p-4 sm:p-5" : "p-3 sm:p-4",
         onClick && "cursor-pointer hover:-translate-y-0.5",
         glow,
         shimmer && "animate-completion-shimmer",
-        hasConflict && "ring-1 ring-[#e0654f]/60"
+        hasConflict && "ring-2 ring-[var(--bad)]/55"
       )}
-      style={{ borderLeft: `3px solid ${accent}` }}
+      style={{
+        borderLeft: `${tv ? 6 : 4}px solid ${accent}`,
+        boxShadow: `-14px 0 26px -22px ${accent}, 0 1px 0 rgba(255,255,255,0.5) inset, 0 20px 44px -22px var(--shadow-color)`,
+      }}
     >
       {hasConflict && (
-        <span className="absolute top-2 right-2 text-[10px] uppercase tracking-wide text-[#e0654f] font-semibold">
+        <span className={clsx("absolute top-2 right-2 text-[var(--bad)]", tv ? "text-sm font-bold uppercase tracking-wide" : "text-label")}>
           conflict
         </span>
       )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <RepAvatar rep={rep ?? { display_name: "?", color_hex: accent, photo_url: null }} size={22} />
-            <span className="text-xs text-[var(--foreground-muted)]">
-              With: <span style={{ color: accent }} className="font-medium">{rep?.display_name ?? "Unassigned"}</span>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className={clsx("tabular text-headline", tv ? "text-2xl sm:text-3xl" : "text-base sm:text-lg")}>
+              {formatTime12h(appt.appt_time)}
+            </span>
+            <span className={clsx("text-headline truncate", tv ? "text-2xl sm:text-3xl" : "text-base sm:text-lg")}>
+              {appt.customer_name}
             </span>
           </div>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="tabular text-sm font-semibold">{formatTime12h(appt.appt_time)}</span>
-            <span className="font-medium truncate">{appt.customer_name}</span>
+          <div className={clsx("text-secondary truncate mt-0.5", tv ? "text-lg" : "text-sm")}>{appt.vehicle}</div>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <RepAvatar rep={rep ?? { display_name: "?", color_hex: accent, photo_url: null }} size={tv ? 26 : 20} />
+            <span className={clsx("text-[var(--foreground-faint)]", tv ? "text-base" : "text-xs")}>
+              With <span className="font-semibold text-[var(--foreground-muted)]">{rep?.display_name ?? "Unassigned"}</span>
+            </span>
           </div>
-          <div className="text-sm text-[var(--foreground-muted)] truncate">{appt.vehicle}</div>
           {!compact && (
-            <div className="mt-2">
+            <div className="mt-2.5">
               <LinkButtons appt={appt} />
             </div>
           )}

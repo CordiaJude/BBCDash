@@ -93,16 +93,16 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
         <div className="glass-input inline-flex p-1 gap-1">
           <button
             onClick={() => setScope("mine")}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              scope === "mine" ? "bg-white/10" : "text-[var(--foreground-muted)] hover:bg-white/5"
+            className={`px-3 py-1.5 rounded-2xl text-sm font-medium transition-colors ${
+              scope === "mine" ? "bg-[var(--hover-tint-strong)]" : "text-[var(--foreground-muted)] hover:bg-[var(--hover-tint)]"
             }`}
           >
             My appointments
           </button>
           <button
             onClick={() => setScope("everyone")}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              scope === "everyone" ? "bg-white/10" : "text-[var(--foreground-muted)] hover:bg-white/5"
+            className={`px-3 py-1.5 rounded-2xl text-sm font-medium transition-colors ${
+              scope === "everyone" ? "bg-[var(--hover-tint-strong)]" : "text-[var(--foreground-muted)] hover:bg-[var(--hover-tint)]"
             }`}
           >
             Everyone
@@ -110,7 +110,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
         </div>
         <button
           onClick={openAdd}
-          className="px-4 py-2 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 transition"
+          className="px-4 py-2 rounded-2xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 transition"
         >
           + Add appointment
         </button>

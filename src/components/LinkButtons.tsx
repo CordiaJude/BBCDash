@@ -8,10 +8,10 @@ function LinkButton({ href, label, icon }: { href: string; label: string; icon: 
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       title={label}
-      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium glass-input hover:bg-white/10 transition-colors"
+      className="glass-icon-btn"
     >
       {icon}
-      {label}
+      <span>{label}</span>
     </a>
   );
 }

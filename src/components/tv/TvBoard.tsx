@@ -66,38 +66,38 @@ export function TvBoard() {
   return (
     <div className="min-h-dvh p-4 sm:p-6">
       {settings?.alerts_enabled && !soundUnlocked && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
           <button
             onClick={enableSound}
-            className="glass-panel-strong px-8 py-6 text-lg font-medium hover:bg-white/10 transition"
+            className="glass-panel-strong px-10 py-7 text-xl font-semibold hover:bg-[var(--hover-tint-strong)] transition"
           >
             🔊 Tap to enable sound alerts
           </button>
         </div>
       )}
 
-      <div className="glass-panel px-5 py-3 mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Appointment Board</h1>
-        <span className="tabular text-sm text-[var(--foreground-muted)]">
+      <div className="glass-panel px-6 py-4 mb-5 flex items-center justify-between">
+        <h1 className="text-headline text-2xl">Appointment Board</h1>
+        <span className="tabular text-lg text-secondary">
           {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} ·{" "}
           {now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
         </span>
       </div>
 
-      {!loaded && <p className="text-[var(--foreground-muted)]">Loading…</p>}
+      {!loaded && <p className="text-secondary text-lg">Loading…</p>}
 
       {layout === "single_list" && (
         <div className="space-y-2.5 max-w-4xl mx-auto">
           {sorted.map((a) => (
             <div key={a.id}>
-              <div className="text-[10px] uppercase tracking-wide text-[var(--foreground-muted)] mb-0.5 ml-1">
+              <div className="text-label mb-1 ml-1">
                 {formatDateShort(a.appt_date)}
               </div>
-              <AppointmentCard appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} />
+              <AppointmentCard appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} tv />
             </div>
           ))}
           {loaded && sorted.length === 0 && (
-            <p className="text-center text-[var(--foreground-muted)] py-16">No appointments this week.</p>
+            <p className="text-center text-secondary text-lg py-16">No appointments this week.</p>
           )}
         </div>
       )}
@@ -108,14 +108,14 @@ export function TvBoard() {
             .filter((r) => r.active)
             .map((r) => (
               <div key={r.id}>
-                <div className="glass-input px-3 py-2 mb-2 text-sm font-medium flex items-center gap-2" style={{ borderLeft: `3px solid ${r.color_hex}` }}>
+                <div className="glass-input px-3 py-2.5 mb-2 text-base text-headline flex items-center gap-2" style={{ borderLeft: `4px solid ${r.color_hex}` }}>
                   {r.display_name}
                 </div>
                 <div className="space-y-2.5">
                   {sorted
                     .filter((a) => a.rep_id === r.id)
                     .map((a) => (
-                      <AppointmentCard key={a.id} appt={a} rep={r} now={now} editable={false} compact />
+                      <AppointmentCard key={a.id} appt={a} rep={r} now={now} editable={false} compact tv />
                     ))}
                 </div>
               </div>
@@ -127,12 +127,12 @@ export function TvBoard() {
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(4, minmax(240px, 1fr))" }}>
           {STATUS_COLUMNS.map((col) => (
             <div key={col.key}>
-              <div className="glass-input px-3 py-2 mb-2 text-sm font-medium text-center">{col.label}</div>
+              <div className="glass-input px-3 py-2.5 mb-2 text-base text-headline text-center">{col.label}</div>
               <div className="space-y-2.5">
                 {sorted
                   .filter((a) => statusBucket(a) === col.key)
                   .map((a) => (
-                    <AppointmentCard key={a.id} appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} compact />
+                    <AppointmentCard key={a.id} appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} compact tv />
                   ))}
               </div>
             </div>

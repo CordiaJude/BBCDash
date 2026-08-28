@@ -25,7 +25,11 @@ export function RepAvatar({
         width={size}
         height={size}
         className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size, boxShadow: `0 0 0 2px ${rep.color_hex}` }}
+        style={{
+          width: size,
+          height: size,
+          boxShadow: `0 0 0 2px rgba(255,255,255,0.85), 0 0 0 3.5px ${rep.color_hex}, 0 2px 8px -2px ${rep.color_hex}66`,
+        }}
       />
     );
   }
@@ -36,9 +40,9 @@ export function RepAvatar({
         width: size,
         height: size,
         fontSize: size * 0.38,
-        background: `${rep.color_hex}33`,
-        color: rep.color_hex,
-        boxShadow: `0 0 0 2px ${rep.color_hex}`,
+        background: `${rep.color_hex}26`,
+        color: "var(--foreground)",
+        boxShadow: `0 0 0 2px rgba(255,255,255,0.85), 0 0 0 3.5px ${rep.color_hex}, 0 2px 8px -2px ${rep.color_hex}66`,
       }}
     >
       {initials(rep.display_name)}

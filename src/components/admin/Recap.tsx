@@ -20,7 +20,7 @@ export function Recap({ appointments }: { appointments: Appointment[] }) {
   return (
     <div className="glass-panel p-4 sm:p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold">Recap</h2>
+        <h2 className="text-headline text-lg">Recap</h2>
         <input
           type="date"
           value={date}

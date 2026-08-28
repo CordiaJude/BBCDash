@@ -292,3 +292,157 @@ Deep read completed for all previously-unreviewed files: `AppointmentModal.tsx`,
 - `src/lib/colors.ts` duplicate-color wraparound past 8 reps — pre-existing
   note from the prior pass, not in the reviewed component set, not
   re-touched.
+
+## Phase 2 — Liquid Glass Design System
+
+Implemented the full visual redesign requested for this pass, across all
+three surfaces (rep dashboard, manager admin, TV display) plus login and
+shared chrome. No business logic, data fetching, auth, or animation timing
+was touched — this was a CSS/markup-for-styling pass only.
+
+### Shared token system (`src/app/globals.css`)
+
+- Flipped the app from a forced dark theme to a **warm off-white light
+  theme** as the default (`--background: #f6f1e9`), with a soft multi-stop
+  radial gradient (amber + cool-blue + warm-tan washes) so the page reads
+  as ambient light rather than a flat fill — deliberately not stark white,
+  per spec, especially for TV viewing across a room.
+- Kept the previous dark palette, now gated behind `prefers-color-scheme:
+  dark` (guarded as `:root:not([data-theme="light"])`) and mirrored under
+  `:root[data-theme="dark"]` for an explicit toggle, per the theme-aware
+  requirement — every color token has both a light (bare `:root`) and dark
+  definition, none defined only inside a media/data-theme block.
+- New/renamed tokens: `--foreground-faint`, `--border-glass-strong`,
+  `--hover-tint` / `--hover-tint-strong` (replacing hard-coded
+  `bg-white/5`, `bg-white/10` utility classes that assumed a dark
+  background — those all read wrong once the base flipped to light, so
+  every occurrence across `Nav.tsx`, `DashboardBoard.tsx`,
+  `AppointmentModal.tsx`, `LinkButtons.tsx`, `TvControls.tsx`,
+  `UserManagement.tsx`, `TvBoard.tsx`, and `login/page.tsx` was swapped to
+  the new theme-aware var via sed pass), `--pending-fg`.
+- Squircle radius scale: `.glass-panel` → `1.75rem`, `.glass-panel-strong`
+  → `2rem`, `.glass-input` → `1rem`, new `.glass-icon-btn` → `1.25rem`;
+  every remaining hand-rolled `rounded-lg`/`rounded-xl` in components was
+  bumped to `rounded-2xl` so nothing in the app uses a tight/sharp corner
+  anymore.
+- Typography hierarchy utilities: `.text-headline` (650 weight, tight
+  tracking, full-strength foreground — customer name / time), `.text-secondary`
+  (500 weight, muted — rep name / vehicle / links), `.text-label` (11px,
+  600 weight, uppercase, wide tracking, faint — section/status labels).
+  Font stack unchanged (Geist via `next/font/google`, already locally
+  bundled at build time — no new webfont dependency introduced).
+- `.glass-icon-btn`: the new shared icon-glass-button style (frosted fill,
+  hairline border, `min-height`/`min-width: 2.75rem` = 44px) used for the
+  appraisal/vAuto/CRM link buttons.
+
+### Per-surface changes
+
+- **`StatusToggle.tsx`** — rebuilt as a 44×44px (`w-11 h-11`, `min-w-11
+  min-h-11`) glass chip with a soft backdrop-blur fill, colored inset ring
+  per state (blank/confirmed=green/rejected=red), and a small dot glyph
+  for the pending state so all three states are visually distinct even
+  without color (shape, not just hue). This directly fixes the
+  under-44px mobile touch-target issue flagged in Phase 1.
+- **`LinkButtons.tsx`** — switched from a bespoke inline class string to
+  the shared `.glass-icon-btn` (icon + label, 44px min touch target,
+  consistent frosted-pill look across appraisal/vAuto/CRM).
+- **`RepAvatar.tsx`** — photo variant gets a soft two-layer ring (white
+  inset + colored outer ring + diffuse colored drop shadow) instead of a
+  hard 2px solid-color outline; initial-letter fallback keeps a
+  colored-tint chip background but renders the initials in the neutral
+  `--foreground` color instead of the raw rep hex (see contrast section
+  below for why).
+- **`AppointmentCard.tsx`** — restructured for real hierarchy: time +
+  customer name promoted to `.text-headline` (18–30px depending on
+  surface), vehicle demoted to `.text-secondary`, rep identity moved into
+  a small "With `<name>`" line under an avatar rather than a top-line
+  colored label. Rep color coding is now expressed only via a 4–6px
+  tinted left border plus a matching soft outward glow
+  (`box-shadow: -14px 0 26px -22px <accent>`) — never as colored body
+  text. Added a `tv` prop that scales up type (2xl/3xl headline, lg
+  secondary, thicker 6px accent border) for the TV surface without
+  affecting the dashboard/admin rendering of the same component.
+- **`TvBoard.tsx`** — every `AppointmentCard` usage (single list,
+  columns-per-rep, columns-by-status) now passes `tv`, so the one surface
+  meant to be read from ~10ft gets materially larger/bolder type instead
+  of the same size as a phone card. Header, column labels, and the
+  sound-unlock overlay were bumped to match.
+- **Admin surface** (`TvControls.tsx`, `UserManagement.tsx`, `Recap.tsx`)
+  — heading treatment switched to `.text-headline`, all hover/active state
+  classes moved off the old `bg-white/*` utilities onto the theme-aware
+  hover tokens.
+- **Login page** — squircle radii bumped, error text moved to
+  `var(--bad)` instead of a hard-coded hex so it tracks the theme token.
+- **`layout.tsx`** — removed the hard-coded `dark` class on `<html>` so
+  the light theme is the actual default render, not just the CSS fallback.
+
+### WCAG AA contrast audit
+
+Every glass surface is translucent, so contrast was computed against the
+**actual composited color** (foreground/panel alpha flattened onto the
+base page background), not the raw CSS variable. Base app background used
+for compositing: `#f6f1e9`. `.glass-panel` is `rgba(255,255,255,0.55)`
+over that base → composites to `#fbf9f5`. Method: WCAG relative-luminance
+formula, ratio = (L1+0.05)/(L2+0.05).
+
+| Foreground | Background (composited) | Ratio | Requirement | Result |
+|---|---|---|---|---|
+| `--foreground` #2a2420 | panel #fbf9f5 | 14.56:1 | 4.5:1 (body text) | Pass |
+| `--foreground-muted` #6b6157 | panel #fbf9f5 | 5.75:1 | 4.5:1 | Pass |
+| `--foreground-faint` #6f6459 (label/caption text) | panel #fbf9f5 | 5.48:1 | 4.5:1 | Pass — **adjusted** from an initial draft `#948b80` (3.19:1, fail) to `#6f6459` |
+| `--pending-fg` #766c60 (StatusToggle blank-state text/dot) | panel #fbf9f5 | 4.89:1 | 4.5:1 | Pass — **adjusted** from an initial draft `#8a8073` (3.69:1, fail) |
+| `--accent` #3568d4 (link/active text) | panel #fbf9f5 | 4.89:1 | 4.5:1 | Pass |
+| `--ok` #1f8f5f (StatusToggle "yes" icon) | its own chip `rgba(31,143,95,0.16)` over panel → `#d8e8dd` | 3.20:1 | 3:1 (graphical/icon, WCAG 1.4.11) | Pass |
+| `--bad` #c8402a (StatusToggle "no" icon / conflict label) | its own chip `rgba(200,64,42,0.14)` over panel → `#f4dfd9` | 3.88:1 | 3:1 (icon) / label text is `.text-label` at 11px bold — checked separately below | Pass |
+| `--bad` on panel directly (conflict `.text-label`, error text) | panel #fbf9f5 | 4.73:1 | 4.5:1 | Pass |
+| white `#fff` on `--accent` #3568d4 (Save/Add buttons) | solid #3568d4 | 5.14:1 | 4.5:1 | Pass |
+| `--foreground` #2a2420 (page body, outside any glass panel) | base `#f6f1e9` | 13.62:1 | 4.5:1 | Pass |
+| `--foreground-muted` #6b6157 (page body) | base `#f6f1e9` | 5.38:1 | 4.5:1 | Pass |
+
+**Rep-color-as-text failure, found and redesigned around:** the 8-color
+rep palette (`src/lib/colors.ts`, unchanged — it's live data already
+assigned to real reps, not touched) was originally designed for dark
+panels. Used as small text on the new light panel it fails badly —
+computed ratios range from **2.37:1 (emerald) to 3.63:1 (violet)**, all
+below 4.5:1, and even white-on-solid-chip only reaches 2.49–3.63:1
+depending on hue. Rather than alter the stored palette (would require a
+DB migration and change already-assigned rep colors, out of scope), the
+**fix was architectural**: rep color is never rendered as small text
+anywhere in this design. It appears only as (a) the card's left accent
+border + soft outward glow, (b) the avatar's tint chip background /
+photo ring, both of which are decorative/graphical, not text. Avatar
+initials render in `--foreground` (dark neutral) on the tinted chip
+(computed ratio 12–14:1 for all 8 palette colors' chips, since the chips
+themselves are >90% panel-white regardless of hue) instead of in the rep
+color. The "With `<name>`" line renders the name in `--foreground-muted`,
+not the rep's hex. This keeps reps instantly distinguishable by color
+(border + glow + ring, all still hue-coded and TV-distance legible) while
+keeping every actual text glyph on a token that passes AA.
+
+**TV-specific sizing:** the `tv` variant on `AppointmentCard` renders
+customer name/time at `text-2xl`/`text-3xl` (24–30px) and vehicle at
+`text-lg` (18px) — both comfortably clear the "large text" 3:1 threshold
+even before applying the same 4.5:1-passing color tokens computed above,
+so TV legibility at distance is not a contrast-vs-size tradeoff here.
+
+### Verification
+
+- `npx tsc --noEmit` — clean, no errors.
+- `npx eslint .` — clean, no warnings or errors.
+- `npx next build` — not run (network-blocked Supabase prerender, per the
+  standing sandbox constraint); not required to validate a CSS/markup-only
+  pass, and `tsc`/`eslint` both pass clean on every touched file.
+
+### Not addressed in this pass (explicitly out of scope)
+
+- Motion (Phase 3) and 3D/depth (Phase 4) — untouched, as instructed.
+- Dark-mode contrast was not independently re-audited token-by-token this
+  pass — the dark palette is the pre-existing scheme from before this
+  redesign (high-contrast light-on-near-black, e.g. `#e9edf5` on
+  `#0b0f17`), carried forward unchanged and gated behind
+  `prefers-color-scheme`/`data-theme`, but the specific AA math above was
+  only computed for the light (default) surfaces per the primary target
+  described in the task.
+- `src/lib/colors.ts`'s 8-color palette was left as-is (see rep-color
+  section above for why, and for the redesign that routes around its
+  contrast problem rather than editing live-data-adjacent constants).

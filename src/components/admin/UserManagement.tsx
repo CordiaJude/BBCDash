@@ -70,10 +70,10 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
   return (
     <div className="glass-panel p-4 sm:p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold">Reps & managers</h2>
+        <h2 className="text-headline text-lg">Reps & managers</h2>
         <button
           onClick={() => setShowAdd((v) => !v)}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 transition"
+          className="px-3 py-1.5 rounded-2xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 transition"
         >
           {showAdd ? "Cancel" : "+ Add account"}
         </button>
@@ -105,11 +105,11 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
             <option value="rep">Rep</option>
             <option value="manager">Manager</option>
           </select>
-          {error && <p className="sm:col-span-2 text-sm text-[#e0654f]">{error}</p>}
+          {error && <p className="sm:col-span-2 text-sm text-[var(--bad)]">{error}</p>}
           <button
             onClick={addRep}
             disabled={saving}
-            className="sm:col-span-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-60 transition"
+            className="sm:col-span-2 px-4 py-2 rounded-2xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-60 transition"
           >
             {saving ? "Creating…" : "Create account"}
           </button>
@@ -146,12 +146,12 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => resetPin(r)} className="glass-input px-2.5 py-1.5 text-xs hover:bg-white/10">
+              <button onClick={() => resetPin(r)} className="glass-input px-2.5 py-1.5 text-xs hover:bg-[var(--hover-tint-strong)]">
                 Reset PIN
               </button>
               <button
                 onClick={() => toggleActive(r)}
-                className="glass-input px-2.5 py-1.5 text-xs hover:bg-white/10"
+                className="glass-input px-2.5 py-1.5 text-xs hover:bg-[var(--hover-tint-strong)]"
               >
                 {r.active ? "Deactivate" : "Reactivate"}
               </button>

@@ -39,7 +39,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
 
   return (
     <div className="glass-panel p-4 sm:p-5">
-      <h2 className="text-base font-semibold mb-4">TV display</h2>
+      <h2 className="text-headline text-lg mb-4">TV display</h2>
 
       <p className="text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-2">Layout mode</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
@@ -48,7 +48,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
             key={l.value}
             onClick={() => patch({ layout_mode: l.value })}
             className={`glass-input p-3 text-left transition-colors ${
-              settings.layout_mode === l.value ? "bg-white/10 ring-1 ring-[var(--accent)]/50" : "hover:bg-white/5"
+              settings.layout_mode === l.value ? "bg-[var(--hover-tint-strong)] ring-1 ring-[var(--accent)]/50" : "hover:bg-[var(--hover-tint)]"
             }`}
           >
             <div className="text-sm font-medium">{l.label}</div>
@@ -92,7 +92,7 @@ export function TvControls({ settings }: { settings: TvSettings }) {
         <button
           onClick={saveOffsets}
           disabled={!settings.alerts_enabled || saving}
-          className="glass-input px-3 py-1.5 text-sm hover:bg-white/10 disabled:opacity-50"
+          className="glass-input px-3 py-1.5 text-sm hover:bg-[var(--hover-tint-strong)] disabled:opacity-50"
         >
           Save
         </button>

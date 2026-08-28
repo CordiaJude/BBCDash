@@ -20,10 +20,10 @@ export function StatusToggle({
 }) {
   const style =
     value === "yes"
-      ? { bg: "rgba(63,184,138,0.18)", fg: "#3fb88a", ring: "rgba(63,184,138,0.5)" }
+      ? { bg: "rgba(31,143,95,0.16)", fg: "var(--ok)", ring: "rgba(31,143,95,0.55)" }
       : value === "no"
-        ? { bg: "rgba(224,101,79,0.18)", fg: "#e0654f", ring: "rgba(224,101,79,0.5)" }
-        : { bg: "rgba(255,255,255,0.04)", fg: "var(--foreground-muted)", ring: "rgba(255,255,255,0.14)" };
+        ? { bg: "rgba(200,64,42,0.14)", fg: "var(--bad)", ring: "rgba(200,64,42,0.55)" }
+        : { bg: "rgba(255,255,255,0.5)", fg: "var(--pending-fg)", ring: "var(--border-glass-strong)" };
 
   return (
     <button
@@ -34,24 +34,26 @@ export function StatusToggle({
         onChange(nextTriState(value));
       }}
       title={`${label}: ${value}`}
-      className="flex flex-col items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
+      aria-label={`${label}: ${value}`}
+      className="flex flex-col items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed group"
     >
       <span
-        className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-        style={{ background: style.bg, color: style.fg, boxShadow: `0 0 0 1px ${style.ring} inset` }}
+        className="w-11 h-11 min-w-11 min-h-11 rounded-2xl flex items-center justify-center transition-transform active:scale-95 backdrop-blur-sm"
+        style={{ background: style.bg, color: style.fg, boxShadow: `0 0 0 1.5px ${style.ring} inset` }}
       >
         {value === "yes" && (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
             <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
         {value === "no" && (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
             <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
+        {value === "pending" && <span className="w-1.5 h-1.5 rounded-full" style={{ background: style.fg }} />}
       </span>
-      <span className="text-[10px] uppercase tracking-wide text-[var(--foreground-muted)]">{label}</span>
+      <span className="text-label">{label}</span>
     </button>
   );
 }

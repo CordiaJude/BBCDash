@@ -28,8 +28,8 @@ export function Nav({ user }: { user: SessionUser }) {
           <Link
             key={t.href}
             href={t.href}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              pathname.startsWith(t.href) ? "bg-white/10 text-[var(--foreground)]" : "text-[var(--foreground-muted)] hover:bg-white/5"
+            className={`px-3 py-1.5 rounded-2xl text-sm font-medium transition-colors ${
+              pathname.startsWith(t.href) ? "bg-[var(--hover-tint-strong)] text-[var(--foreground)]" : "text-[var(--foreground-muted)] hover:bg-[var(--hover-tint)]"
             }`}
           >
             {t.label}
@@ -41,7 +41,7 @@ export function Nav({ user }: { user: SessionUser }) {
           <RepAvatar rep={{ display_name: user.display_name, color_hex: user.color_hex, photo_url: null }} size={26} />
           <span className="text-sm hidden sm:inline">{user.display_name}</span>
         </div>
-        <button onClick={logout} className="glass-input px-3 py-1.5 text-sm hover:bg-white/10 transition">
+        <button onClick={logout} className="glass-input px-3 py-1.5 text-sm hover:bg-[var(--hover-tint-strong)] transition">
           Log out
         </button>
       </div>

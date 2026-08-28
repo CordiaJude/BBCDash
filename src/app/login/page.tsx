@@ -77,14 +77,14 @@ function LoginForm() {
             <div
               key={i}
               id={`pin-${i}`}
-              className="w-12 h-14 rounded-xl glass-input flex items-center justify-center text-2xl tabular"
+              className="w-12 h-14 rounded-2xl glass-input flex items-center justify-center text-2xl tabular"
             >
               {pin[i] ? "•" : ""}
             </div>
           ))}
         </div>
 
-        {error && <p className="text-sm text-[#e0654f] text-center mb-3">{error}</p>}
+        {error && <p className="text-sm text-[var(--bad)] text-center mb-3">{error}</p>}
 
         <div className="grid grid-cols-3 gap-2">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
@@ -93,7 +93,7 @@ function LoginForm() {
               type="button"
               onClick={() => pressDigit(d)}
               disabled={submitting}
-              className="glass-input py-3.5 text-lg font-medium hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+              className="glass-input py-3.5 text-lg font-medium hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
             >
               {d}
             </button>
@@ -102,7 +102,7 @@ function LoginForm() {
             type="button"
             onClick={backspace}
             disabled={submitting}
-            className="glass-input py-3.5 text-sm hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+            className="glass-input py-3.5 text-sm hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
           >
             ⌫
           </button>
@@ -110,7 +110,7 @@ function LoginForm() {
             type="button"
             onClick={() => pressDigit("0")}
             disabled={submitting}
-            className="glass-input py-3.5 text-lg font-medium hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+            className="glass-input py-3.5 text-lg font-medium hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
           >
             0
           </button>
@@ -118,7 +118,7 @@ function LoginForm() {
             type="button"
             onClick={() => setPin("")}
             disabled={submitting}
-            className="glass-input py-3.5 text-sm hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+            className="glass-input py-3.5 text-sm hover:bg-[var(--hover-tint-strong)] active:scale-95 transition disabled:opacity-50"
           >
             Clear
           </button>

@@ -209,7 +209,7 @@ export function AppointmentModal({
           </Field>
         </div>
 
-        {error && <p className="text-sm text-[#e0654f] mt-3">{error}</p>}
+        {error && <p className="text-sm text-[var(--bad)] mt-3">{error}</p>}
 
         <div className="flex items-center justify-between mt-5">
           <div>
@@ -217,21 +217,21 @@ export function AppointmentModal({
               <button
                 onClick={remove}
                 disabled={saving}
-                className="text-sm text-[#e0654f] hover:underline disabled:opacity-50"
+                className="text-sm text-[var(--bad)] hover:underline disabled:opacity-50"
               >
                 Delete appointment
               </button>
             )}
           </div>
           <div className="flex gap-2">
-            <button onClick={onClose} className="glass-input px-4 py-2 text-sm hover:bg-white/10">
+            <button onClick={onClose} className="glass-input px-4 py-2 text-sm hover:bg-[var(--hover-tint-strong)]">
               Cancel
             </button>
             {canEditAll && (
               <button
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 text-sm rounded-xl font-medium bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-60 transition"
+                className="px-4 py-2 text-sm rounded-2xl font-medium bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-60 transition"
               >
                 {saving ? "Saving…" : "Save"}
               </button>
