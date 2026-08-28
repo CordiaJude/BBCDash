@@ -161,12 +161,13 @@ export function TvBoard() {
         </div>
       )}
 
-      <div className="panel panel-tv px-6 py-4 mb-5 flex items-center justify-between">
-        <h1 className="text-headline text-2xl">Appointment Board</h1>
-        <span className="tabular text-lg text-secondary">
+      {/* Quiet corner clock instead of a header bar — keeps the table as
+          the only real focal point on screen. */}
+      <div className="fixed bottom-4 right-4 z-20 pointer-events-none">
+        <div className="pill-select tabular text-xs sm:text-sm shadow-sm opacity-90">
           {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} ·{" "}
           {now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-        </span>
+        </div>
       </div>
 
       {!loaded && <p className="text-secondary text-lg">Loading…</p>}
