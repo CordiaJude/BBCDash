@@ -11,9 +11,9 @@
   contract from earlier phases still holds in both directions.
 */
 :root {
-  --background: #f5f6f8;
+  --background: #fbfbfc;
   --panel: #ffffff;
-  --panel-alt: #f7f8fa;
+  --panel-alt: #fafafb;
   --foreground: #16181c;
   --foreground-muted: #52565c;
   --foreground-faint: #6b7078;
