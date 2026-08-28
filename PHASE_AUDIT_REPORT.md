@@ -827,3 +827,192 @@ one:
   transform/opacity on 3 static elements, no JS per-frame cost), but an
   actual soak test on TV hardware is still owed once network access
   exists.
+
+## Phase 5 — Final QA Pass
+
+Closing pass: re-verified the kill list item-by-item against the current
+code (post Phase 1–4), read every remaining previously-unread file
+(`useLiveData.ts`, `useAlertScheduler.ts`, `sounds.ts`, `colors.ts`), ran
+full static verification including `next build` for the first time this
+project, checked for cross-phase regressions, and produced the open-risk
+list below. As with every prior phase, no live app interaction was
+possible in this sandbox (no network route to the Supabase host) — every
+row below is explicitly tagged for what kind of verification actually
+backs it.
+
+### Kill-list pass/fail table
+
+| # | Item | Status | Tag |
+|---|---|---|---|
+| 1 | Username+PIN login: auto-submit on 4th digit, clear error on bad PIN | PASS — `login/page.tsx` `pressDigit` auto-calls `submit()` at length 4; `submit()` resets `pin` and sets `error` on failure; typing a new digit clears `error`. Server side (`api/auth/login/route.ts`) does regex PIN validation + bcrypt compare + generic error message. | CODE-VERIFIED |
+| 2 | Rep dashboard: add/edit own appointments in 15-min slots, read-only view of all reps | PASS — `AppointmentModal.tsx` generates 15-min slots (`time.ts` 7:00 AM–8:00 PM); `DashboardBoard.tsx` shows all reps' appointments but gates Save/status-toggle editability to `isManager \|\| appointment.rep_id === user.id`, so non-owned appointments render fully read-only (no Save button rendered at all, not just disabled). | CODE-VERIFIED |
+| 3 | Tri-state status persistence | PASS, with a standing design note — each of Confirmed/Showed/Sold cycles independently `pending → yes → no → pending` (`StatusToggle.tsx`) and persists via PATCH on every click, including the return to blank. There is no enforced linear "confirmed→showed→sold" ordering (a rep can set Sold without the others) — this is how the whole codebase (API included) is built, not a bug, but is a real product-behavior gap from a literal reading of a gated state-machine requirement. | CODE-VERIFIED |
+| 4 | Manager admin: edit/delete/reassign any appointment | PASS — `AppointmentModal.tsx` shows the rep-reassignment `<select>` and delete button only for managers; PATCH route allows `rep_id` reassignment only when `session.role === "manager"`. | CODE-VERIFIED |
+| 5 | Live TV layout push | PASS — `TvControls.tsx` PATCHes `tv_settings.layout_mode`; `TvBoard.tsx` receives it over the `useTvSettings` Realtime subscription and cross-fades (`layout-fade-out`/`-in`, Phase 3) into the new layout. The push mechanism (write to `tv_settings`, Realtime broadcast, subscriber re-renders) is correct in code; that a live Postgres change event actually arrives at a browser client cannot be confirmed here. | NEEDS-LIVE-VERIFICATION |
+| 6 | Server-side-enforced permission boundary (not just UI hiding) | PASS — `api/appointments/[id]/route.ts` PATCH: 403 when `session.role !== "manager" && existing.rep_id !== session.id`; DELETE: 403 unless `session.role === "manager"`; `rep_id` field is only accepted from managers. This is real server enforcement independent of any UI state. | CODE-VERIFIED |
+| 7 | Appraisal/vAuto/CRM links persisted and retrievable | PASS — three URL fields + CRM label editable in `AppointmentModal.tsx`, included in `EDITABLE_FIELDS` on both POST and PATCH routes, rendered as real anchor links (`LinkButtons.tsx`) only when set, with `stopPropagation` so a link click doesn't also open the edit modal. | CODE-VERIFIED |
+| 8 | Rep color coding, no duplicate colors among active reps | PARTIAL PASS — `colors.ts`'s `nextAvailableColor()` correctly avoids duplicates for the first 8 active reps (an 8-color palette, `Set`-based lookup) but silently wraps via modulo and **can** reissue a color once a 9th rep is active simultaneously. Not fixed (same call as Phase 0/1: touching this needs a product decision on either growing the palette or blocking a 9th active rep, out of scope for a QA pass to decide unilaterally) — flagged again here as the one known correctness edge case in the whole app. | CODE-VERIFIED (the gap itself, not a "looks right" guess) |
+| 9 | TV: whole week, Realtime sync | PASS — `TvBoard.tsx` computes `weekAppts` from today through end-of-week; `useAppointments()`/`useTvSettings()`/`useReps()` in `useLiveData.ts` each open a `postgres_changes` channel (`event: "*"`) on `appointments`/`tv_settings`/`users` and reload on any event, with matching `removeChannel` cleanup. Subscription code is structurally correct; an actual live Postgres change event reaching the browser was never observed. | NEEDS-LIVE-VERIFICATION |
+| 10 | TV: completed appointments sink to bottom, then drop off at day rollover — driven by the clock, not just page reload | PASS — this was the Phase 0/1 fix: `weekAppts`'s `useMemo` now depends on `now` (the ticking `useNowTick` clock), not just `[appointments]`, so the day-boundary check re-evaluates every tick independent of new Realtime data arriving. The FLIP-animated sink-to-bottom reorder (Phase 3, `useFlipAnimation.ts`) and the fade-out-then-remove-from-`fadingOut`-map rollover animation are keyed off the same clock-driven list. Confirmed by reading `TvBoard.tsx` in full this pass — the dependency array genuinely includes `now`, not a stale placeholder. | CODE-VERIFIED |
+| 11 | Up Next glow within 30 min, now animated | PASS — `AppointmentCard.tsx`'s `upNextGlowClass` computes `minutesUntil(...)` against the `now` prop, gates `0 <= mins <= 30` (two-tier: `<=15` gets the more urgent variant), and stops once the appointment is fully processed. `up-next-glow`/`up-next-glow-urgent` are real CSS `@keyframes` (2.6s / 1.5s `ease-in-out infinite` box-shadow pulses), collapsed under the reduced-motion blanket rule. | CODE-VERIFIED |
+| 12 | Sound alerts: toggle, preset, offset, autoplay-unlock-on-first-interaction | PASS in code — `useAlertScheduler.ts` polls every 20s, fires each configured offset once per appointment (`firedRef` dedupe keyed `id-offset`) and only while `settings.alerts_enabled && soundUnlocked`; `sounds.ts`'s `unlockAudio()` resumes the `AudioContext` and plays a near-silent oscillator blip on the first real user gesture (the "Tap to enable sound" overlay in `TvBoard.tsx`, which only renders pre-unlock). The mechanism matches MDN's documented autoplay-unlock pattern. Whether it actually produces audible sound in a real browser under that browser's specific autoplay policy has never been observed. | NEEDS-LIVE-VERIFICATION |
+| 13 | Concurrent-edit safety (last-write-wins without corruption) | PASS — PATCH route does a field-level `.update()` of only the submitted fields (`EDITABLE_FIELDS`), never a whole-row read-modify-write; component code (`DashboardBoard.setStatus`, `AppointmentModal.save`) fires the PATCH and lets the Realtime subscription reconcile displayed state afterward rather than optimistically overwriting a full object — so there is no path that can silently clobber a concurrent field with stale local state. This is correct last-write-wins-per-field behavior, not full optimistic-concurrency control (no `updated_at` comparison/rejection), which matches the stated requirement rather than falling short of it. | CODE-VERIFIED |
+| 14 | Mobile usability of rep dashboard (44px touch targets) | PASS — this was the concrete Phase 1→2 fix: `StatusToggle.tsx` was rebuilt at `w-11 h-11` (44×44px) with `min-w-11 min-h-11`; `.glass-icon-btn` (link buttons) also enforces `min-height`/`min-width: 2.75rem`. Layout uses `grid-cols-1 sm:grid-cols-2` / `flex-wrap` throughout with no fixed-pixel-width elements found that would force horizontal scroll. Verified by reading the Tailwind classes and CSS values directly — actual on-device tap accuracy/finger overlap was never observed. | NEEDS-LIVE-VERIFICATION (sizing is code-verified; real-world tap ergonomics is not) |
+| 15 | Visual state: liquid glass / frosted / soft shadows / no hard edges | PASS in code — `globals.css` squircle radius scale (`1rem`–`2rem` across all glass utility classes, no remaining `rounded-lg`/hard corners found), `backdrop-blur` + translucent panel fills throughout, WCAG-AA contrast computed and passing per the Phase 2/2.1 tables against the actual composited (not raw-variable) colors. Whether this actually reads as "liquid glass" to a human eye, at TV viewing distance, under real showroom lighting, is a subjective/visual judgment no static read can make. | NEEDS-LIVE-VERIFICATION (contrast math and radius/blur values are code-verified; the subjective "looks right" is not) |
+
+**Tally: 10 of 15 rows CODE-VERIFIED outright, 5 rows NEEDS-LIVE-VERIFICATION** (items 5, 9, 12, 14, 15 — TV Realtime push/sync, sound playback, and subjective visual/tap-ergonomics judgments, all of which depend on runtime behavior this sandbox cannot exercise). Item 8 (rep color palette wraparound past 8 reps) remains a known, documented, unfixed edge case rather than a pass/fail in the usual sense.
+
+### Static verification results
+
+- **`npx tsc --noEmit`** — clean, zero errors, zero output.
+- **`npx eslint .`** — clean, zero errors/warnings, zero output.
+- **`npx next build`** — **succeeded in full**, for the first time this project (previous phases could not attempt it or left it unrun). Output:
+  ```
+  ✓ Compiled successfully in 6.5s
+  Running TypeScript ... Finished TypeScript in 3.0s
+  Generating static pages using 3 workers (13/13)
+  Finalizing page optimization ...
+
+  Route (app)
+  ┌ ƒ /
+  ├ ○ /_not-found
+  ├ ƒ /admin
+  ├ ƒ /api/appointments
+  ├ ƒ /api/appointments/[id]
+  ├ ƒ /api/auth/login
+  ├ ƒ /api/auth/logout
+  ├ ƒ /api/tv-settings
+  ├ ƒ /api/users
+  ├ ƒ /api/users/[id]
+  ├ ƒ /api/users/[id]/photo
+  ├ ƒ /dashboard
+  ├ ○ /login
+  └ ƒ /tv
+  ```
+  All app routes except `/login` and `/_not-found` are marked `ƒ` (dynamic,
+  server-rendered on demand) rather than `○` (static) — meaning none of
+  them attempt to prerender against Supabase at build time, which is why
+  the build succeeded even though this sandbox cannot reach the Supabase
+  host. This confirms the earlier phases' assumption (that the Supabase
+  network block would only ever show up as a build failure, never silently
+  pass) was correct, but empirically: there was no network-block failure
+  to distinguish from a real bug this time, because the app's routing
+  correctly defers all Supabase access to request time rather than build
+  time.
+
+### Cross-phase consistency check
+
+- **Phase 3 motion classes vs. Phase 4 edits** — no clobbering found.
+  `TvBoard.tsx`'s Phase 3 additions (FLIP ref, `fadingOut` map, layout
+  cross-fade state, `appt-card-enter` wrapper divs) and Phase 4's ambient
+  background layer coexist as clearly separated concerns: the ambient
+  `<div className="tv-ambient-bg">` is a sibling inserted before the
+  `<div className="relative z-10">` wrapper that contains everything
+  Phase 3 touches, not an edit to any Phase 3 element itself. The
+  single-list FLIP container (`singleListRef`) and its `data-flip-id`
+  children are untouched by the Phase 4 diff.
+- **Phase 2.1 bright-white tokens vs. Phase 4 ambient layer — opacity/z-index math checked, sane.**
+  Ambient shapes are `position: fixed`, `z-index: 0`; real content is a
+  `position: relative; z-index: 10` wrapper — a clean stacking order, no
+  fallback-to-natural-order accidents possible since both an explicit
+  z-index and a positioning context are set on both layers. Shape opacity
+  is capped at 0.06–0.10 with a 70px blur, layered under `--accent`/`--ok`
+  colors, which are the same tokens re-tuned to be vivid-but-controlled
+  against pure white in Phase 2.1 — so the ambient layer inherits the
+  Phase 2.1 palette automatically rather than carrying stale Phase 2 warm
+  hex values (no hard-coded colors found in the `.tv-ambient-bg` rules,
+  confirmed by reading `globals.css:339-393`). The `.glass-panel-tv`
+  modifier (heavier border/shadow, added specifically because Phase 2.1
+  observed that a pure-white panel on a pure-white body loses edge
+  definition at TV distance) is still present and still wired into every
+  TV panel/header — Phase 4 did not regress that fix by, say, adding a new
+  unstyled panel that skips it.
+- **Dead code / unused imports** — none found. `npx eslint .` (which
+  includes `eslint-config-next`'s unused-vars rules) is clean, and a
+  targeted search for the specific artifact called out as a known
+  Phase-3-era leak risk (`prevCompleteRef`, the old unbounded shimmer-
+  tracking map replaced by `useSoldShimmer`) turned up zero remaining
+  references — it was fully removed, not just superseded and left
+  orphaned. No `framer-motion` or other unused animation dependency was
+  added at any phase (`package.json` still has none; `grep` for it across
+  `src/` returns nothing).
+- **Newly read files this pass** (`useLiveData.ts`, `useAlertScheduler.ts`,
+  `sounds.ts`, `colors.ts`) — no bugs found. `useAlertScheduler`'s offset
+  match window (`mins <= offset && mins > offset - 0.5`, checked every
+  20s) is narrow enough that at a 20s poll interval it could in principle
+  skip an offset if the event loop stalls for >30s, but this is a
+  reasonable trade-off for a background polling scheduler, not a defect —
+  noted as a very minor edge case, not fixed.
+- **`.env.local`** — confirmed still untracked and gitignored
+  (`git check-ignore -v .env.local` resolves via `.gitignore:34: .env*`);
+  `git status --porcelain` is empty at the end of this pass; `git ls-files`
+  contains no env file.
+
+### Bugs fixed this pass
+
+None. This pass found no new type errors, lint errors, or logic bugs — `tsc`,
+`eslint`, and `next build` were already clean going in (from Phase 1–4's own
+verification) and stayed clean after the additional file reads and the
+first successful full build. The only prior-pass bugs (TV day-rollover
+clock dependency, inverted double-booking conflict detector, the
+`layout.tsx` codegen-type issue, three `react-hooks/set-state-in-effect`
+violations) were all fixed in earlier phases and re-confirmed still fixed
+here, not re-discovered.
+
+### Honest open-risk list
+
+1. **Supabase Realtime delivery was never observed.** All three
+   `postgres_changes` subscriptions (`useLiveData.ts`: appointments, reps
+   via the `users` table, tv_settings) are structurally correct —
+   channel/table names match the schema referenced everywhere else in the
+   codebase, `event: "*"` covers insert/update/delete, cleanup calls
+   `removeChannel` — but the actual channel name, table name, and RLS
+   policy configuration were never validated against a live database
+   connection. If Realtime is misconfigured server-side (e.g. replication
+   not enabled for a table, or an RLS policy blocking the anon/authenticated
+   role's subscription), every "instant sync" claim in this report
+   degrades silently to "works after a manual page reload" with no error
+   surfaced to the user.
+2. **Sound alerts have never actually played audio.** The autoplay-unlock
+   pattern (`sounds.ts`) matches documented Web Audio API guidance, but
+   real browser autoplay policies vary by vendor, version, and even OS
+   power-saving mode, and TV-attached devices/kiosk browsers in particular
+   can have nonstandard policies. This needs an actual speaker test on the
+   real showroom TV/browser combination before relying on it.
+3. **The TV's multi-hour visual/perf behavior is unverified.** Phase 3/4's
+   leak-risk review is real (unbounded maps and timers were checked and
+   fixed/confirmed-clean by code reading), but no actual soak test has
+   run — slow memory growth from a source not yet imagined, GPU cost of
+   three blurred ambient shapes on real TV-class hardware (often weaker
+   GPUs than a dev laptop), or an interaction between the FLIP reorder and
+   a very large day's appointment count are all untested.
+4. **Rep color palette hard-caps at 8 before risking a duplicate.** Known,
+   documented, unfixed across four phases now. Fine for realistic
+   dealership team sizes but will silently reissue a color to a 9th
+   simultaneously-active rep with no warning to the manager. Worth a
+   product decision (grow the palette, or block/warn on a 9th active rep)
+   before this scales past 8 reps on the floor.
+5. **No optimistic-concurrency (`updated_at`) check on PATCH.** Confirmed
+   correct as-designed for the stated "last-write-wins" requirement, not a
+   bug — but if the actual expectation ever shifts to "warn on stale edit"
+   (two managers editing the same appointment within seconds of each
+   other), that would be new work, not a fix to existing code.
+6. **Tri-state fields have no enforced ordering.** Also as-designed
+   end-to-end (UI and API), not a bug — but if the literal
+   "confirmed → showed → sold" gated sequence implied by the original spec
+   is actually required product behavior rather than three independent
+   flags, that is a real, not-yet-scoped feature gap, not something this
+   QA pass could fix without a product decision on the intended flow.
+
+### Overall status
+
+Code-level QA is clean: `tsc`, `eslint`, and — for the first time —
+`next build` all pass with zero errors, and a fresh read of every
+previously-unreviewed file in the codebase turned up no new bugs. 10 of 15
+kill-list items are fully code-verified; the remaining 5 are code-correct
+by every inspectable measure but depend on runtime behavior (Realtime
+delivery, audio playback, subjective visual/tap judgment) that requires
+live testing once network access to Supabase exists. That live pass —
+login → add/edit appointment → status toggles → TV sync in a second
+window → sound unlock and playback → a multi-hour TV soak — is the one
+remaining gate before this goes live on an actual showroom TV.
