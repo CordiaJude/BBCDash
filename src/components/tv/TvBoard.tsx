@@ -173,7 +173,7 @@ export function TvBoard() {
 
       <div key={displayLayout} className={layoutFadeClass}>
         {displayLayout === "single_list" && (
-          <div className="panel panel-tv max-w-4xl mx-auto p-4 sm:p-5">
+          <div className="panel panel-tv w-full p-4 sm:p-6">
             <AppointmentTableHeader />
             <div ref={singleListRef}>
               {renderList.map((a) => (

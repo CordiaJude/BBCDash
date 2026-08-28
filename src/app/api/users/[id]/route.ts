@@ -74,9 +74,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     }
   }
 
-  // Deleting a rep cascades to delete their appointments too (see
+  // tv_settings.updated_by references users(id) with no ON DELETE rule
+  // (default RESTRICT), so deleting whoever last touched TV settings
+  // fails with a foreign-key violation unless that reference is cleared
+  // first. Deleting a rep cascades to delete their appointments too (see
   // supabase/migrations/0001_init.sql: appointments.rep_id ... on delete
-  // cascade) — the UI warns about this before calling here.
+  // cascade) — the UI warns about that before calling here.
+  await supabase.from("tv_settings").update({ updated_by: null }).eq("updated_by", id);
+
   const { error } = await supabase.from("users").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
