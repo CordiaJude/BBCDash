@@ -164,7 +164,7 @@ export function AppointmentRow({
 
       <div className="min-w-0">
         <div className="text-sm text-[var(--foreground)] truncate">{appt.vehicle}</div>
-        {(appt.appraisal_link || appt.vauto_link || appt.crm_link) && (
+        {appt.vauto_link && (
           <div className="mt-1" onClick={(e) => e.stopPropagation()}>
             <LinkButtons appt={appt} />
           </div>

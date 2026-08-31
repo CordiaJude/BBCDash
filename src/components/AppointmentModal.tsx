@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Appointment, CrmLabel, Rep, SessionUser } from "@/lib/types";
+import type { Appointment, Rep, SessionUser } from "@/lib/types";
 import { generateTimeSlots, todayISO } from "@/lib/time";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 
@@ -30,10 +30,7 @@ export function AppointmentModal({
   const [apptDate, setApptDate] = useState(appointment?.appt_date ?? todayISO());
   const [apptTime, setApptTime] = useState(appointment?.appt_time ?? "09:00:00");
   const [repId, setRepId] = useState(appointment?.rep_id ?? user.id);
-  const [appraisalLink, setAppraisalLink] = useState(appointment?.appraisal_link ?? "");
   const [vautoLink, setVautoLink] = useState(appointment?.vauto_link ?? "");
-  const [crmLink, setCrmLink] = useState(appointment?.crm_link ?? "");
-  const [crmLabel, setCrmLabel] = useState<CrmLabel | "">(appointment?.crm_label ?? "");
   const [notes, setNotes] = useState(appointment?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -75,10 +72,7 @@ export function AppointmentModal({
       appt_date: apptDate,
       appt_time: apptTime,
       rep_id: isManager ? repId : undefined,
-      appraisal_link: appraisalLink || null,
       vauto_link: vautoLink || null,
-      crm_link: crmLink || null,
-      crm_label: crmLabel || null,
       notes: notes || null,
     };
     try {
@@ -183,42 +177,12 @@ export function AppointmentModal({
             </Field>
           )}
 
-          <Field label="Appraisal link" className="sm:col-span-2">
-            <input
-              className="field w-full px-3 py-2"
-              placeholder="https://…"
-              value={appraisalLink}
-              onChange={(e) => setAppraisalLink(e.target.value)}
-              disabled={!canEditAll}
-            />
-          </Field>
           <Field label="vAuto link" className="sm:col-span-2">
             <input
               className="field w-full px-3 py-2"
               placeholder="https://…"
               value={vautoLink}
               onChange={(e) => setVautoLink(e.target.value)}
-              disabled={!canEditAll}
-            />
-          </Field>
-          <Field label="CRM">
-            <select
-              className="field w-full px-3 py-2"
-              value={crmLabel}
-              onChange={(e) => setCrmLabel(e.target.value as CrmLabel | "")}
-              disabled={!canEditAll}
-            >
-              <option value="">None</option>
-              <option value="VAN">VAN</option>
-              <option value="DealerCentric">DealerCentric</option>
-            </select>
-          </Field>
-          <Field label="CRM link">
-            <input
-              className="field w-full px-3 py-2"
-              placeholder="https://…"
-              value={crmLink}
-              onChange={(e) => setCrmLink(e.target.value)}
               disabled={!canEditAll}
             />
           </Field>
