@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppointments, useReps, useTvSettings } from "@/lib/useLiveData";
 import { useNowTick } from "@/lib/useNowTick";
 import { useAlertScheduler } from "@/lib/useAlertScheduler";
-import { unlockAudio } from "@/lib/sounds";
+import { unlockAudio, playAlertSound } from "@/lib/sounds";
 import { endOfWeekISO, todayISO } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { AppointmentCard } from "../AppointmentCard";
@@ -117,6 +117,13 @@ export function TvBoard() {
 
   async function enableSound() {
     await unlockAudio();
+    // unlockAudio's own blip is deliberately near-silent (it exists only to
+    // satisfy the browser's autoplay gesture requirement) — play an
+    // audible confirmation immediately so tapping this button actually
+    // produces sound, instead of leaving the manager waiting until an
+    // appointment happens to enter its alert window before hearing
+    // anything at all.
+    playAlertSound(settings?.alert_sound ?? "chime");
     setSoundUnlocked(true);
   }
 
