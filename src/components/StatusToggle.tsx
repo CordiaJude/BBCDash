@@ -1,6 +1,6 @@
 import type { TriState } from "@/lib/types";
 
-const CYCLE: TriState[] = ["pending", "yes", "no"];
+const CYCLE: TriState[] = ["pending", "yes", "no", "maybe"];
 
 export function nextTriState(current: TriState): TriState {
   const idx = CYCLE.indexOf(current);
@@ -8,16 +8,13 @@ export function nextTriState(current: TriState): TriState {
 }
 
 /**
- * Flat tri-state circle, reusing the app's existing pending/yes/no field
- * (see src/lib/types.ts — no schema change) mapped onto the reference's
- * three visual states:
+ * Four-state status circle (see supabase/migrations/0003_four_state_status.sql
+ * for the schema change that added the "maybe" value):
  *   pending -> empty, gray-outline circle ("not yet")
  *   yes     -> solid green circle, white checkmark ("done")
- *   no      -> blue-outline circle, blue "?" (this field's other resolved
- *              state — there is no separate "uncertain" concept in the
- *              data model, so it borrows the reference's blue-question
- *              treatment rather than a red/rejected one; see the phase
- *              report for the explicit reasoning)
+ *   no      -> red-outline circle, red X ("rejected")
+ *   maybe   -> blue-outline circle, blue "?" ("uncertain")
+ * Clicking cycles through all four in that order.
  */
 export function StatusToggle({
   label,
@@ -37,8 +34,10 @@ export function StatusToggle({
     value === "yes"
       ? { bg: "var(--ok)", fg: "var(--ok-icon)", ring: "transparent" }
       : value === "no"
-        ? { bg: "transparent", fg: "var(--accent)", ring: "var(--accent)" }
-        : { bg: "transparent", fg: "var(--pending-outline)", ring: "var(--pending-outline)" };
+        ? { bg: "transparent", fg: "var(--bad)", ring: "var(--bad)" }
+        : value === "maybe"
+          ? { bg: "transparent", fg: "var(--accent)", ring: "var(--accent)" }
+          : { bg: "transparent", fg: "var(--pending-outline)", ring: "var(--pending-outline)" };
 
   return (
     <button
@@ -65,7 +64,12 @@ export function StatusToggle({
             <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
-        {value === "no" && <span className="text-sm font-bold leading-none">?</span>}
+        {value === "no" && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </svg>
+        )}
+        {value === "maybe" && <span className="text-sm font-bold leading-none">?</span>}
       </span>
       {showLabel && <span className="text-label">{label}</span>}
     </button>
