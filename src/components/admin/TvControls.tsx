@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AlertSound, LayoutMode, TvSettings } from "@/lib/types";
+import { playAlertSound } from "@/lib/sounds";
 
 const LAYOUTS: { value: LayoutMode; label: string; hint: string }[] = [
   { value: "single_list", label: "Single list", hint: "All reps mixed, sorted by time" },
@@ -68,18 +69,35 @@ export function TvControls({ settings }: { settings: TvSettings }) {
           />
           Enabled
         </label>
-        <select
-          className="field px-3 py-1.5 text-sm"
-          value={settings.alert_sound}
-          onChange={(e) => patch({ alert_sound: e.target.value })}
-          disabled={!settings.alerts_enabled}
-        >
-          {SOUNDS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+      </div>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {SOUNDS.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => {
+              // Clicking a sound both previews it immediately (this click
+              // is itself the user gesture browsers require to play audio,
+              // so no separate unlock step is needed here the way the TV's
+              // kiosk view needs one) and selects it as the active alert
+              // sound.
+              playAlertSound(s.value);
+              if (s.value !== settings.alert_sound) patch({ alert_sound: s.value });
+            }}
+            disabled={!settings.alerts_enabled}
+            className={`field px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
+              settings.alert_sound === s.value
+                ? "bg-[var(--hover-surface-strong)] ring-1 ring-[var(--accent)]/50"
+                : "hover:bg-[var(--hover-surface)]"
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 9v6h4l5 5V4L9 9H5z" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M17 8a5 5 0 0 1 0 8" strokeLinecap="round" />
+            </svg>
+            {s.label}
+          </button>
+        ))}
       </div>
       <div className="flex items-center gap-2">
         <input
