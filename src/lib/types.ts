@@ -1,6 +1,6 @@
 export type Role = "rep" | "manager";
-// "pending" = blank, "yes" = green check, "no" = red X, "maybe" = blue "?"
-export type TriState = "pending" | "yes" | "no" | "maybe";
+// "pending" = blank, "yes" = green check, "no" = red X
+export type TriState = "pending" | "yes" | "no";
 export type LayoutMode = "single_list" | "columns_per_rep" | "columns_by_status";
 export type CrmLabel = "VAN" | "DealerCentric";
 export type AlertSound = "chime" | "bell" | "soft_ping";

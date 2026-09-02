@@ -1,20 +1,23 @@
 import type { TriState } from "@/lib/types";
 
-const CYCLE: TriState[] = ["pending", "yes", "no", "maybe"];
+const CYCLE: TriState[] = ["pending", "yes", "no"];
 
 export function nextTriState(current: TriState): TriState {
+  // A previously-saved "maybe" value (from when a 4th state existed
+  // briefly) isn't in CYCLE — indexOf returns -1, and (-1 + 1) % 3 = 0,
+  // which lands on "pending" anyway, so no special-casing is needed.
   const idx = CYCLE.indexOf(current);
   return CYCLE[(idx + 1) % CYCLE.length];
 }
 
 /**
- * Four-state status circle (see supabase/migrations/0003_four_state_status.sql
- * for the schema change that added the "maybe" value):
+ * Three-state status circle:
  *   pending -> empty, gray-outline circle ("not yet")
  *   yes     -> solid green circle, white checkmark ("done")
  *   no      -> red-outline circle, red X ("rejected")
- *   maybe   -> blue-outline circle, blue "?" ("uncertain")
- * Clicking cycles through all four in that order.
+ * Clicking cycles blank -> check -> X -> blank. No schema/migration is
+ * needed for this — both values were already valid per
+ * supabase/migrations/0001_init.sql.
  */
 export function StatusToggle({
   label,
@@ -35,9 +38,7 @@ export function StatusToggle({
       ? { bg: "var(--ok)", fg: "var(--ok-icon)", ring: "transparent" }
       : value === "no"
         ? { bg: "transparent", fg: "var(--bad)", ring: "var(--bad)" }
-        : value === "maybe"
-          ? { bg: "transparent", fg: "var(--accent)", ring: "var(--accent)" }
-          : { bg: "transparent", fg: "var(--pending-outline)", ring: "var(--pending-outline)" };
+        : { bg: "transparent", fg: "var(--pending-outline)", ring: "var(--pending-outline)" };
 
   return (
     <button
@@ -69,7 +70,6 @@ export function StatusToggle({
             <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
           </svg>
         )}
-        {value === "maybe" && <span className="text-sm font-bold leading-none">?</span>}
       </span>
       {showLabel && <span className="text-label">{label}</span>}
     </button>
