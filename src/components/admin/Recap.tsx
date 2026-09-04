@@ -5,6 +5,7 @@ import type { Appointment, Rep, SessionUser } from "@/lib/types";
 import { CustomerDetailModal } from "./CustomerDetailModal";
 import { WorkflowModal } from "../WorkflowModal";
 import { useDealershipSettings } from "@/lib/useLiveData";
+import { CollapsibleSection } from "./CollapsibleSection";
 import {
   endOfMonthISO,
   endOfWeekISO,
@@ -83,40 +84,39 @@ export function Recap({ appointments, reps, user }: { appointments: Appointment[
     setDrilldown((c) => (c === category ? null : category));
   }
 
-  return (
-    <div className="pb-6 border-b border-[var(--border)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="text-headline text-lg">Recap</h2>
-        <div className="flex items-center gap-2">
-          <div className="flex field p-0.5 gap-0.5">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => {
-                  setPeriod(p.value);
-                  setDrilldown(null);
-                }}
-                className={`px-2.5 py-1 rounded-[calc(var(--radius-md)-0.25rem)] text-xs font-medium transition-colors ${
-                  period === p.value ? "bg-[var(--accent)] text-white" : "hover:bg-[var(--hover-surface)]"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <input
-            type="date"
-            value={anchor}
-            onChange={(e) => {
-              setAnchor(e.target.value);
+  const controls = (
+    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex field p-0.5 gap-0.5">
+        {PERIODS.map((p) => (
+          <button
+            key={p.value}
+            onClick={() => {
+              setPeriod(p.value);
               setDrilldown(null);
             }}
-            className="field px-3 py-1.5 text-sm tabular"
-          />
-        </div>
+            className={`px-2.5 py-1 rounded-[calc(var(--radius-md)-0.25rem)] text-xs font-medium transition-colors ${
+              period === p.value ? "bg-[var(--accent)] text-white" : "hover:bg-[var(--hover-surface)]"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
+      <input
+        type="date"
+        value={anchor}
+        onChange={(e) => {
+          setAnchor(e.target.value);
+          setDrilldown(null);
+        }}
+        className="field px-3 py-1.5 text-sm tabular"
+      />
+    </div>
+  );
 
-      {rangeLabel && <p className="text-xs text-[var(--foreground-muted)] mb-3 -mt-2">{rangeLabel}</p>}
+  return (
+    <CollapsibleSection title="Recap" right={controls}>
+      {rangeLabel && <p className="text-xs text-[var(--foreground-muted)] mb-3 -mt-1">{rangeLabel}</p>}
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Stat label="Set" value={stats.set} active={drilldown === "set"} onClick={() => toggle("set")} />
@@ -193,7 +193,7 @@ export function Recap({ appointments, reps, user }: { appointments: Appointment[
           onClose={() => setWorkflowAppt(null)}
         />
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 

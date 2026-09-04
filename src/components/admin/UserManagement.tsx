@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { Rep } from "@/lib/types";
 import { RepAvatar } from "../RepAvatar";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 export function UserManagement({ reps }: { reps: Rep[] }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -88,18 +89,20 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
     window.location.reload();
   }
 
-  return (
-    <div className="pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-headline text-lg">Reps & managers</h2>
-        <button
-          onClick={() => setShowAdd((v) => !v)}
-          className="px-3 py-1.5 rounded-2xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 transition"
-        >
-          {showAdd ? "Cancel" : "+ Add account"}
-        </button>
-      </div>
+  const addButton = (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowAdd((v) => !v);
+      }}
+      className="px-3 py-1.5 rounded-2xl text-sm font-medium bg-[var(--accent)] text-white hover:brightness-110 transition"
+    >
+      {showAdd ? "Cancel" : "+ Add account"}
+    </button>
+  );
 
+  return (
+    <CollapsibleSection title="Reps & managers" right={addButton} defaultOpen={false}>
       {showAdd && (
         <div className="field p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input
@@ -186,6 +189,6 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
           </div>
         ))}
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }

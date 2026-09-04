@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Appointment, Rep, WorkflowStepRow } from "@/lib/types";
 import { useAllWorkflowSteps } from "@/lib/useLiveData";
 import { ALL_STEPS } from "@/lib/workflowSteps";
+import { CollapsibleSection } from "./CollapsibleSection";
 import {
   endOfMonthISO,
   endOfWeekISO,
@@ -135,17 +136,22 @@ export function AppraisalFunnel({ appointments, reps }: { appointments: Appointm
       ? varianceDeals.reduce((sum, a) => sum + ((a.bought_price ?? 0) - marketMid(a)), 0) / varianceDeals.length
       : null;
 
-  const gapBuckets = useMemo(() => {
-    const buckets = { "≤ $500": [] as Appointment[], "$500–$1,500": [] as Appointment[], "$1,500+": [] as Appointment[] };
-    for (const a of inRange) {
-      if (a.asking_price == null || (a.market_indicates_min == null && a.market_indicates_max == null)) continue;
-      const gap = Math.abs(a.asking_price - marketMid(a));
-      if (gap <= 500) buckets["≤ $500"].push(a);
-      else if (gap <= 1500) buckets["$500–$1,500"].push(a);
-      else buckets["$1,500+"].push(a);
-    }
-    return buckets;
-  }, [inRange]);
+  // Split around the dealership's own average gap for this range, rather
+  // than hardcoded dollar buckets — the split point moves with the data.
+  const gapDeals = useMemo(
+    () =>
+      inRange
+        .filter((a) => a.asking_price != null && (a.market_indicates_min != null || a.market_indicates_max != null))
+        .map((a) => ({ appt: a, gap: Math.abs(a.asking_price! - marketMid(a)) })),
+    [inRange]
+  );
+  const avgGap = gapDeals.length > 0 ? gapDeals.reduce((s, d) => s + d.gap, 0) / gapDeals.length : null;
+  const gapSplit = useMemo(() => {
+    if (avgGap == null) return null;
+    const narrower = gapDeals.filter((d) => d.gap <= avgGap);
+    const wider = gapDeals.filter((d) => d.gap > avgGap);
+    return { narrower, wider };
+  }, [gapDeals, avgGap]);
 
   function repName(id: string) {
     if (id === "unassigned") return "Unassigned";
@@ -155,41 +161,41 @@ export function AppraisalFunnel({ appointments, reps }: { appointments: Appointm
     return arr.reduce((s, v) => s + v, 0) / arr.length;
   }
 
-  return (
-    <div className="pb-6 border-b border-[var(--border)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="text-headline text-lg">Appraisal Funnel</h2>
-        <div className="flex items-center gap-2">
-          <div className="flex field p-0.5 gap-0.5">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => setPeriod(p.value)}
-                className={`px-2.5 py-1 rounded-[calc(var(--radius-md)-0.25rem)] text-xs font-medium transition-colors ${
-                  period === p.value ? "bg-[var(--accent)] text-white" : "hover:bg-[var(--hover-surface)]"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <input
-            type="date"
-            value={anchor}
-            onChange={(e) => setAnchor(e.target.value)}
-            className="field px-3 py-1.5 text-sm tabular"
-          />
-          <select value={repFilter} onChange={(e) => setRepFilter(e.target.value)} className="field px-3 py-1.5 text-sm">
-            <option value="all">All reps</option>
-            {reps.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.display_name}
-              </option>
-            ))}
-          </select>
-        </div>
+  const controls = (
+    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex field p-0.5 gap-0.5">
+        {PERIODS.map((p) => (
+          <button
+            key={p.value}
+            onClick={() => setPeriod(p.value)}
+            className={`px-2.5 py-1 rounded-[calc(var(--radius-md)-0.25rem)] text-xs font-medium transition-colors ${
+              period === p.value ? "bg-[var(--accent)] text-white" : "hover:bg-[var(--hover-surface)]"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
-      <p className="text-xs text-[var(--foreground-muted)] mb-4 -mt-2">
+      <input
+        type="date"
+        value={anchor}
+        onChange={(e) => setAnchor(e.target.value)}
+        className="field px-3 py-1.5 text-sm tabular"
+      />
+      <select value={repFilter} onChange={(e) => setRepFilter(e.target.value)} className="field px-3 py-1.5 text-sm">
+        <option value="all">All reps</option>
+        {reps.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.display_name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
+  return (
+    <CollapsibleSection title="Appraisal Funnel" right={controls} defaultOpen={false}>
+      <p className="text-xs text-[var(--foreground-muted)] mb-4 -mt-1">
         {formatDateShort(start)} – {formatDateShort(end)} · {withWorkflow.length} appointment(s) run through the workflow
       </p>
 
@@ -271,21 +277,35 @@ export function AppraisalFunnel({ appointments, reps }: { appointments: Appointm
       {/* Close rate by price gap */}
       <div>
         <h3 className="text-label mb-2">Close rate by price gap (asking vs. market)</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {Object.entries(gapBuckets).map(([label, list]) => {
-            const sold = list.filter((a) => a.sold_status === "yes").length;
-            const rate = list.length > 0 ? Math.round((sold / list.length) * 100) : 0;
-            return (
-              <div key={label} className="field p-3 text-center">
-                <div className="text-lg font-semibold tabular">{rate}%</div>
-                <div className="text-xs text-[var(--foreground-muted)]">
-                  {label} · {list.length} deal{list.length === 1 ? "" : "s"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {avgGap == null || !gapSplit ? (
+          <p className="text-sm text-[var(--foreground-muted)]">No deals with both asking price and market indicates in this range.</p>
+        ) : (
+          <>
+            <p className="text-sm mb-2">
+              Average gap: <span className="font-semibold tabular">{money(avgGap)}</span>
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { label: "Narrower than average", list: gapSplit.narrower },
+                  { label: "Wider than average", list: gapSplit.wider },
+                ] as const
+              ).map(({ label, list }) => {
+                const sold = list.filter((d) => d.appt.sold_status === "yes").length;
+                const rate = list.length > 0 ? Math.round((sold / list.length) * 100) : 0;
+                return (
+                  <div key={label} className="field p-3 text-center">
+                    <div className="text-lg font-semibold tabular">{rate}%</div>
+                    <div className="text-xs text-[var(--foreground-muted)]">
+                      {label} · {list.length} deal{list.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }

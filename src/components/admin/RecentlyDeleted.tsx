@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDeletedAppointments } from "@/lib/useLiveData";
 import { formatDateShort, formatTime12h } from "@/lib/time";
 import type { Rep } from "@/lib/types";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 const RETENTION_DAYS = 7;
 
@@ -32,9 +33,8 @@ export function RecentlyDeleted({ reps }: { reps: Rep[] }) {
   if (appointments.length === 0) return null;
 
   return (
-    <div className="py-6 border-b border-[var(--border)]">
-      <h2 className="text-headline text-lg mb-1">Recently deleted</h2>
-      <p className="text-xs text-[var(--foreground-muted)] mb-4">
+    <CollapsibleSection title={`Recently deleted (${appointments.length})`} defaultOpen={false}>
+      <p className="text-xs text-[var(--foreground-muted)] mb-4 -mt-1">
         Kept for 7 days after deletion, then removed for good.
       </p>
       <div className="space-y-2">
@@ -64,6 +64,6 @@ export function RecentlyDeleted({ reps }: { reps: Rep[] }) {
           );
         })}
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }
