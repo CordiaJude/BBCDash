@@ -5,7 +5,7 @@ import { useAppointments, useReps, useTvSettings } from "@/lib/useLiveData";
 import { useNowTick } from "@/lib/useNowTick";
 import { useAlertScheduler } from "@/lib/useAlertScheduler";
 import { unlockAudio, playAlertSound } from "@/lib/sounds";
-import { endOfWeekISO, todayISO } from "@/lib/time";
+import { todayISO } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { AppointmentCard } from "../AppointmentCard";
 import { AppointmentRow, AppointmentTableHeader } from "../AppointmentRow";
@@ -45,39 +45,41 @@ export function TvBoard() {
 
   const repMap = useMemo(() => new Map(reps.map((r) => [r.id, r])), [reps]);
 
-  const weekAppts = useMemo(() => {
+  const upcomingAppts = useMemo(() => {
     // Recomputed on every `now` tick (not just when appointments change) so that
     // completed/past-day appointments actually drop off at midnight rollover,
-    // rather than only when new realtime data happens to arrive.
+    // rather than only when new realtime data happens to arrive. No upper
+    // bound — the TV should surface every upcoming appointment, not just
+    // the current week.
     const today = todayISO();
-    const end = endOfWeekISO(now);
-    return appointments.filter((a) => a.appt_date >= today && a.appt_date <= end);
+    return appointments.filter((a) => a.appt_date >= today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments, now]);
 
-  useAlertScheduler(weekAppts, settings, soundUnlocked);
+  useAlertScheduler(upcomingAppts, settings, soundUnlocked);
 
   const sorted = useMemo(() => {
-    return weekAppts.slice().sort((a, b) => {
+    return upcomingAppts.slice().sort((a, b) => {
       const ac = isComplete(a) ? 1 : 0;
       const bc = isComplete(b) ? 1 : 0;
       if (ac !== bc) return ac - bc;
       return (a.appt_date + a.appt_time).localeCompare(b.appt_date + b.appt_time);
     });
-  }, [weekAppts]);
+  }, [upcomingAppts]);
 
-  // Appointments that just fell out of `weekAppts` (day rollover, or the
+  // Appointments that just fell out of `upcomingAppts` (day rollover, or the
   // record disappearing entirely) stay rendered — with a fade-out class —
   // for one more beat instead of vanishing on the next tick. Entries are
   // always removed by their own timeout, so this map cannot grow unbounded
   // over a long-running TV session.
   const [fadingOut, setFadingOut] = useState<Map<string, Appointment>>(new Map());
-  const prevWeekApptsRef = useRef<Appointment[]>([]);
+  const prevUpcomingApptsRef = useRef<Appointment[]>([]);
 
   useEffect(() => {
-    const prev = prevWeekApptsRef.current;
-    const currentIds = new Set(weekAppts.map((a) => a.id));
+    const prev = prevUpcomingApptsRef.current;
+    const currentIds = new Set(upcomingAppts.map((a) => a.id));
     const justLeft = prev.filter((a) => !currentIds.has(a.id));
-    prevWeekApptsRef.current = weekAppts;
+    prevUpcomingApptsRef.current = upcomingAppts;
 
     if (justLeft.length === 0) return;
 
@@ -105,7 +107,7 @@ export function TvBoard() {
       clearTimeout(add);
       timers.forEach(clearTimeout);
     };
-  }, [weekAppts, reducedMotion]);
+  }, [upcomingAppts, reducedMotion]);
 
   // Merge in fading-out ghosts (sorted first, since isComplete() on a
   // just-removed record is irrelevant to its exit) so they render with
@@ -190,7 +192,7 @@ export function TvBoard() {
                 </div>
               ))}
             </div>
-            {loaded && renderList.length === 0 && <EmptyState message="No appointments this week." />}
+            {loaded && renderList.length === 0 && <EmptyState message="No upcoming appointments." />}
           </div>
         )}
 
