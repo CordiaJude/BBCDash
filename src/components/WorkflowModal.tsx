@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Appointment, DealershipSettings, SessionUser, WorkflowStepRow } from "@/lib/types";
 import { useWorkflowSteps } from "@/lib/useLiveData";
 import { APPRAISAL_STEPS, EXIT_REASONS, MGM_STEPS, StepDef } from "@/lib/workflowSteps";
+import { StatusToggle } from "./StatusToggle";
 
 function stepData(steps: WorkflowStepRow[], key: string): Record<string, unknown> {
   return steps.find((s) => s.step_key === key)?.data ?? {};
@@ -109,6 +110,20 @@ export function WorkflowModal({
     onClose();
   }
 
+  async function nixChecklist() {
+    if (!confirm("Mark as no-show? This clears all checklist progress for this appointment.")) return;
+    await fetch(`/api/appointments/${appointment.id}/workflow`, { method: "DELETE" });
+    onClose();
+  }
+
+  async function setShowedStatus(next: "pending" | "yes" | "no") {
+    if (next === "no") {
+      await nixChecklist();
+      return;
+    }
+    await patchAppointment(appointment.id, { showed_status: next });
+  }
+
   const totalSteps = MGM_STEPS.length + APPRAISAL_STEPS.length;
   const doneCount = [...MGM_STEPS, ...APPRAISAL_STEPS].filter((s) => isDone(steps, s.key)).length;
 
@@ -123,12 +138,18 @@ export function WorkflowModal({
             <h2 className="text-headline text-xl truncate">{appointment.customer_name}</h2>
             <p className="text-secondary text-sm truncate">{appointment.vehicle}</p>
           </div>
-          <button onClick={onClose} aria-label="Close (saves progress)" className="icon-btn-round shrink-0">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
-              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <StatusToggle label="Show" value={appointment.showed_status} onChange={setShowedStatus} showLabel />
+            <button onClick={onClose} aria-label="Close (saves progress)" className="icon-btn-round shrink-0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
+                <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
+        <p className="text-xs text-[var(--foreground-muted)] -mt-1 mb-2">
+          Tap Show to mark a no-show — this clears the checklist below.
+        </p>
 
         {/* Progress bar */}
         <div className="field h-2 mb-1 overflow-hidden p-0">
