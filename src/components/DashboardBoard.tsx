@@ -58,7 +58,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
   const { appointments, loaded } = useAppointments();
   const reps = useReps();
   const now = useNowTick();
-  const [scope, setScope] = useState<"mine" | "everyone">("mine");
+  const [scope, setScope] = useState<"mine" | "everyone">(user.role === "manager" ? "everyone" : "mine");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
