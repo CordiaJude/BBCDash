@@ -96,7 +96,12 @@ export function AppointmentModal({
 
   async function remove() {
     if (!appointment || !isManager) return;
-    if (!confirm(`Delete the appointment for ${appointment.customer_name}?`)) return;
+    if (
+      !confirm(
+        `Delete the appointment for ${appointment.customer_name}? It can be restored from Admin → Recently deleted for 7 days.`
+      )
+    )
+      return;
     setSaving(true);
     const res = await fetch(`/api/appointments/${appointment.id}`, { method: "DELETE" });
     if (res.ok) {

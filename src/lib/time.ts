@@ -59,3 +59,12 @@ export function endOfWeekISO(now = new Date()): string {
   d.setDate(diff);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+export function startOfMonthISO(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+export function endOfMonthISO(now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}

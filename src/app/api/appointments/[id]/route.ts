@@ -70,7 +70,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
   const { id } = await params;
   const supabase = createAdminClient();
-  const { error } = await supabase.from("appointments").delete().eq("id", id);
+  // Soft delete — sets deleted_at instead of removing the row, so it can
+  // be restored from Admin → "Recently deleted" within 7 days. See
+  // /api/appointments/purge-expired for the actual hard-delete.
+  const { error } = await supabase.from("appointments").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

@@ -105,13 +105,16 @@ body {
   /* Flat, opaque, cool-gray ground. No gradient, no warmth. */
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, var(--font-sans), "Segoe UI", Arial, Helvetica, sans-serif;
   min-height: 100dvh;
 }
 
+/* Numbers/times/dates: same system-sans stack as the rest of the app
+   (not a monospace/code font) — tabular-nums alone keeps digits aligned
+   in columns without needing a monospace family. */
 .tabular {
-  font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 /* ---- Typography hierarchy ---- */

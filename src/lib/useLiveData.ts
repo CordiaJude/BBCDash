@@ -49,6 +49,7 @@ export function useAppointments() {
       supabase
         .from("appointments")
         .select("*")
+        .is("deleted_at", null)
         .order("appt_date", { ascending: true })
         .order("appt_time", { ascending: true })
         .then((res: { data: Appointment[] | null }) => {
@@ -63,6 +64,45 @@ export function useAppointments() {
 
     const channel = supabase
       .channel("appointments-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, reload)
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return { appointments, loaded };
+}
+
+/** Soft-deleted appointments still within their 7-day retention window (Admin → "Recently deleted"). */
+export function useDeletedAppointments() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    let active = true;
+
+    const reload = () => {
+      supabase
+        .from("appointments")
+        .select("*")
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false })
+        .then((res: { data: Appointment[] | null }) => {
+          if (active && res.data) {
+            setAppointments(res.data);
+            setLoaded(true);
+          }
+        });
+    };
+
+    reload();
+
+    const channel = supabase
+      .channel("deleted-appointments-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, reload)
       .subscribe();
 
