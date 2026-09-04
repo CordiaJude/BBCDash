@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
     crm_link,
     crm_label,
     notes,
+    asking_price,
+    market_indicates_min,
+    market_indicates_max,
   } = body;
 
   if (!customer_name?.trim() || !vehicle?.trim() || !appt_date || !appt_time) {
@@ -43,6 +46,9 @@ export async function POST(req: NextRequest) {
       crm_link: crm_link || null,
       crm_label: crm_label || null,
       notes: notes || null,
+      asking_price: asking_price === "" || asking_price == null ? null : Number(asking_price),
+      market_indicates_min: market_indicates_min === "" || market_indicates_min == null ? null : Number(market_indicates_min),
+      market_indicates_max: market_indicates_max === "" || market_indicates_max == null ? null : Number(market_indicates_max),
     })
     .select()
     .single();

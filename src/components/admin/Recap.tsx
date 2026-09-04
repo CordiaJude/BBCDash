@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Appointment, Rep } from "@/lib/types";
+import type { Appointment, Rep, SessionUser } from "@/lib/types";
 import { CustomerDetailModal } from "./CustomerDetailModal";
+import { WorkflowModal } from "../WorkflowModal";
+import { useDealershipSettings } from "@/lib/useLiveData";
 import {
   endOfMonthISO,
   endOfWeekISO,
@@ -43,11 +45,13 @@ function rangeFor(period: Period, anchorISO: string): { start: string; end: stri
   return { start: anchorISO, end: anchorISO };
 }
 
-export function Recap({ appointments, reps }: { appointments: Appointment[]; reps: Rep[] }) {
+export function Recap({ appointments, reps, user }: { appointments: Appointment[]; reps: Rep[]; user: SessionUser }) {
   const [period, setPeriod] = useState<Period>("day");
   const [anchor, setAnchor] = useState(todayISO());
   const [drilldown, setDrilldown] = useState<Category | null>(null);
   const [selected, setSelected] = useState<Appointment | null>(null);
+  const [workflowAppt, setWorkflowAppt] = useState<Appointment | null>(null);
+  const dealershipSettings = useDealershipSettings();
 
   const { start, end } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
 
@@ -174,6 +178,19 @@ export function Recap({ appointments, reps }: { appointments: Appointment[]; rep
           appointment={selected}
           rep={reps.find((r) => r.id === selected.rep_id)}
           onClose={() => setSelected(null)}
+          onViewWorkflow={() => {
+            setWorkflowAppt(selected);
+            setSelected(null);
+          }}
+        />
+      )}
+
+      {workflowAppt && (
+        <WorkflowModal
+          user={user}
+          appointment={workflowAppt}
+          dealershipSettings={dealershipSettings}
+          onClose={() => setWorkflowAppt(null)}
         />
       )}
     </div>

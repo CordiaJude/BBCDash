@@ -17,6 +17,11 @@ const EDITABLE_FIELDS = [
   "notes",
 ] as const;
 
+// Asking Price / Market Indicates lock once the appointment reaches
+// "showed" — they represent a clean pre-arrival baseline for the funnel
+// reports. A manager can still override for a data-entry error; reps cannot.
+const LOCKABLE_FIELDS = ["asking_price", "market_indicates_min", "market_indicates_max"] as const;
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const supabase = createAdminClient();
   const { data: existing, error: fetchError } = await supabase
     .from("appointments")
-    .select("id, rep_id")
+    .select("id, rep_id, showed_status")
     .eq("id", id)
     .maybeSingle();
 
@@ -39,8 +44,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
 
+  const locked = existing.showed_status !== "pending";
+  if (locked && session.role !== "manager") {
+    for (const field of LOCKABLE_FIELDS) {
+      if (field in body) {
+        return NextResponse.json(
+          { error: "Asking price / market indicates are locked once the appointment has showed." },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
   const update: Record<string, unknown> = {};
   for (const field of EDITABLE_FIELDS) {
+    if (field in body) update[field] = body[field];
+  }
+  for (const field of LOCKABLE_FIELDS) {
     if (field in body) update[field] = body[field];
   }
   // Only a manager may reassign an appointment to a different rep.

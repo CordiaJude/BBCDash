@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { getBrowserSupabase } from "./supabase/browser";
-import type { Appointment, Rep, TvSettings } from "./types";
+import type { Appointment, DealershipSettings, Rep, TvSettings, WorkflowStepRow } from "./types";
 
 export function useReps() {
   const [reps, setReps] = useState<Rep[]>([]);
@@ -113,6 +113,119 @@ export function useDeletedAppointments() {
   }, []);
 
   return { appointments, loaded };
+}
+
+/** All workflow_steps rows (used by the admin Appraisal Funnel report to join against loaded appointments). */
+export function useAllWorkflowSteps() {
+  const [steps, setSteps] = useState<WorkflowStepRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    let active = true;
+
+    const reload = () => {
+      supabase
+        .from("workflow_steps")
+        .select("*")
+        .then((res: { data: WorkflowStepRow[] | null }) => {
+          if (active && res.data) {
+            setSteps(res.data);
+            setLoaded(true);
+          }
+        });
+    };
+
+    reload();
+
+    const channel = supabase
+      .channel("workflow-steps-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "workflow_steps" }, reload)
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return { steps, loaded };
+}
+
+/** Live workflow_steps rows for a single appointment — feeds the WorkflowModal so progress survives closing the tab. */
+export function useWorkflowSteps(appointmentId: string) {
+  const [steps, setSteps] = useState<WorkflowStepRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    let active = true;
+
+    const reload = () => {
+      supabase
+        .from("workflow_steps")
+        .select("*")
+        .eq("appointment_id", appointmentId)
+        .then((res: { data: WorkflowStepRow[] | null }) => {
+          if (active && res.data) {
+            setSteps(res.data);
+            setLoaded(true);
+          }
+        });
+    };
+
+    reload();
+
+    const channel = supabase
+      .channel(`workflow-steps-${appointmentId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "workflow_steps", filter: `appointment_id=eq.${appointmentId}` },
+        reload
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [appointmentId]);
+
+  return { steps, loaded };
+}
+
+export function useDealershipSettings() {
+  const [settings, setSettings] = useState<DealershipSettings | null>(null);
+
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    let active = true;
+
+    const reload = () => {
+      supabase
+        .from("dealership_settings")
+        .select("*")
+        .eq("id", 1)
+        .maybeSingle()
+        .then((res: { data: DealershipSettings | null }) => {
+          if (active && res.data) setSettings(res.data);
+        });
+    };
+
+    reload();
+
+    const channel = supabase
+      .channel("dealership-settings-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "dealership_settings" }, reload)
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return settings;
 }
 
 export function useTvSettings() {

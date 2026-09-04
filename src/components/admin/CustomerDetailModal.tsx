@@ -47,10 +47,12 @@ export function CustomerDetailModal({
   appointment,
   rep,
   onClose,
+  onViewWorkflow,
 }: {
   appointment: Appointment;
   rep: Rep | undefined;
   onClose: () => void;
+  onViewWorkflow?: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 modal-backdrop-in" onClick={onClose}>
@@ -93,6 +95,34 @@ export function CustomerDetailModal({
           <StatusPill label="Show" value={appointment.showed_status} />
           <StatusPill label="Sold" value={appointment.sold_status} />
         </div>
+
+        {(appointment.asking_price != null || appointment.market_indicates_min != null || appointment.bought_price != null) && (
+          <div className="grid grid-cols-3 gap-2 mb-5 text-center">
+            <div className="field p-2.5">
+              <div className="text-sm font-semibold tabular">{appointment.asking_price != null ? `$${appointment.asking_price}` : "—"}</div>
+              <div className="text-label">Asking</div>
+            </div>
+            <div className="field p-2.5">
+              <div className="text-sm font-semibold tabular">
+                {appointment.market_indicates_min != null ? `$${appointment.market_indicates_min}${appointment.market_indicates_max != null ? `–$${appointment.market_indicates_max}` : ""}` : "—"}
+              </div>
+              <div className="text-label">Market</div>
+            </div>
+            <div className="field p-2.5">
+              <div className="text-sm font-semibold tabular">{appointment.bought_price != null ? `$${appointment.bought_price}` : "—"}</div>
+              <div className="text-label">Bought</div>
+            </div>
+          </div>
+        )}
+
+        {appointment.workflow_status !== "not_started" && onViewWorkflow && (
+          <button onClick={onViewWorkflow} className="field w-full py-2 text-sm mb-5 hover:bg-[var(--hover-surface)]">
+            View MGM / Appraisal workflow
+            {appointment.workflow_status === "exited" && (
+              <span className="text-[var(--foreground-muted)]"> · exited at {appointment.exit_step ?? "?"}</span>
+            )}
+          </button>
+        )}
 
         {appointment.vauto_link && (
           <a

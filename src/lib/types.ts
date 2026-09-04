@@ -4,6 +4,13 @@ export type TriState = "pending" | "yes" | "no";
 export type LayoutMode = "single_list" | "columns_per_rep" | "columns_by_status";
 export type CrmLabel = "VAN" | "DealerCentric";
 export type AlertSound = "chime" | "bell" | "soft_ping";
+export type TitleStatus = "clear" | "payoff";
+export type WorkflowStatus =
+  | "not_started"
+  | "mgm_in_progress"
+  | "appraisal_in_progress"
+  | "completed_purchase"
+  | "exited";
 
 export interface Rep {
   id: string;
@@ -35,6 +42,32 @@ export interface Appointment {
   updated_at: string;
   completed_at: string | null;
   deleted_at: string | null;
+  asking_price: number | null;
+  market_indicates_min: number | null;
+  market_indicates_max: number | null;
+  title_status: TitleStatus | null;
+  payoff_amount: number | null;
+  bought_price: number | null;
+  workflow_status: WorkflowStatus;
+  exit_step: string | null;
+  exit_reason: string | null;
+}
+
+export interface WorkflowStepRow {
+  id: string;
+  appointment_id: string;
+  step_key: string;
+  completed_at: string | null;
+  data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DealershipSettings {
+  id: number;
+  return_drive_questions: string[];
+  updated_by: string | null;
+  updated_at: string;
 }
 
 export interface TvSettings {

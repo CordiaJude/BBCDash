@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Appointment, SessionUser, TriState } from "@/lib/types";
-import { useAppointments, useReps } from "@/lib/useLiveData";
+import { useAppointments, useDealershipSettings, useReps } from "@/lib/useLiveData";
+import { WorkflowModal } from "./WorkflowModal";
 import { useNowTick } from "@/lib/useNowTick";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { EmptyState } from "@/components/EmptyState";
@@ -57,6 +58,8 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
   const router = useRouter();
   const { appointments, loaded } = useAppointments();
   const reps = useReps();
+  const dealershipSettings = useDealershipSettings();
+  const [workflowAppt, setWorkflowAppt] = useState<Appointment | null>(null);
   const now = useNowTick();
   const [scope, setScope] = useState<"mine" | "everyone">(user.role === "manager" ? "everyone" : "mine");
   const [modalOpen, setModalOpen] = useState(false);
@@ -111,6 +114,13 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
   const completedToday = visible.filter((a) => isComplete(a) && a.appt_date === today);
 
   async function setStatus(appt: Appointment, field: "confirmed_status" | "showed_status" | "sold_status", value: TriState) {
+    // Tapping "Show" launches the guided MGM/Appraisal workflow instead of
+    // flipping the tri-state directly — see WorkflowModal. The circle
+    // itself becomes a reflection of workflow progress, not a manual toggle.
+    if (field === "showed_status") {
+      setWorkflowAppt(appt);
+      return;
+    }
     await fetch(`/api/appointments/${appt.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -243,6 +253,15 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
           onClose={() => setModalOpen(false)}
           onSaved={() => setModalOpen(false)}
           onDeleted={() => setModalOpen(false)}
+        />
+      )}
+
+      {workflowAppt && (
+        <WorkflowModal
+          user={user}
+          appointment={workflowAppt}
+          dealershipSettings={dealershipSettings}
+          onClose={() => setWorkflowAppt(null)}
         />
       )}
     </div>

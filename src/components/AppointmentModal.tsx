@@ -32,6 +32,9 @@ export function AppointmentModal({
   const [repId, setRepId] = useState(appointment?.rep_id ?? user.id);
   const [vautoLink, setVautoLink] = useState(appointment?.vauto_link ?? "");
   const [notes, setNotes] = useState(appointment?.notes ?? "");
+  const [askingPrice, setAskingPrice] = useState(appointment?.asking_price?.toString() ?? "");
+  const [marketMin, setMarketMin] = useState(appointment?.market_indicates_min?.toString() ?? "");
+  const [marketMax, setMarketMax] = useState(appointment?.market_indicates_max?.toString() ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -58,6 +61,9 @@ export function AppointmentModal({
   }, [onClose]);
 
   const canEditAll = isManager || !isEdit || appointment?.rep_id === user.id;
+  // Locks once the appointment has showed — represents a clean pre-arrival
+  // baseline for the funnel reports. Manager can still override.
+  const marketFieldsLocked = isEdit && appointment!.showed_status !== "pending" && !isManager;
 
   async function save() {
     if (!customerName.trim() || !vehicle.trim()) {
@@ -74,6 +80,13 @@ export function AppointmentModal({
       rep_id: isManager ? repId : undefined,
       vauto_link: vautoLink || null,
       notes: notes || null,
+      ...(marketFieldsLocked
+        ? {}
+        : {
+            asking_price: askingPrice === "" ? null : Number(askingPrice),
+            market_indicates_min: marketMin === "" ? null : Number(marketMin),
+            market_indicates_max: marketMax === "" ? null : Number(marketMax),
+          }),
     };
     try {
       const res = await fetch(isEdit ? `/api/appointments/${appointment!.id}` : "/api/appointments", {
@@ -191,6 +204,47 @@ export function AppointmentModal({
               disabled={!canEditAll}
             />
           </Field>
+          <Field label={askingPrice ? "Asking price" : "Asking price (missing)"}>
+            <input
+              type="number"
+              inputMode="decimal"
+              className={`field w-full px-3 py-2 tabular ${!askingPrice ? "ring-1 ring-[var(--bad)]/40" : ""}`}
+              placeholder="What the customer says it's worth"
+              value={askingPrice}
+              onChange={(e) => setAskingPrice(e.target.value)}
+              disabled={!canEditAll || marketFieldsLocked}
+            />
+          </Field>
+          <Field label="Market indicates">
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                inputMode="decimal"
+                className={`field w-full px-3 py-2 tabular ${
+                  !marketMin && !marketMax ? "ring-1 ring-[var(--bad)]/40" : ""
+                }`}
+                placeholder="Min"
+                value={marketMin}
+                onChange={(e) => setMarketMin(e.target.value)}
+                disabled={!canEditAll || marketFieldsLocked}
+              />
+              <span className="text-[var(--foreground-faint)] text-sm">–</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="field w-full px-3 py-2 tabular"
+                placeholder="Max"
+                value={marketMax}
+                onChange={(e) => setMarketMax(e.target.value)}
+                disabled={!canEditAll || marketFieldsLocked}
+              />
+            </div>
+          </Field>
+          {marketFieldsLocked && (
+            <p className="sm:col-span-2 text-xs text-[var(--foreground-muted)] -mt-1.5 flex items-center gap-1.5">
+              <LockIcon /> Locked in once the appointment has showed — a manager can override for a data-entry error.
+            </p>
+          )}
           <Field label="Notes" className="sm:col-span-2">
             <textarea
               className="field w-full px-3 py-2 min-h-20"
@@ -235,6 +289,15 @@ export function AppointmentModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="5" y="11" width="14" height="9" rx="1.5" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+    </svg>
   );
 }
 
