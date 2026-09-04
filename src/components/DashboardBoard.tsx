@@ -16,6 +16,35 @@ function isComplete(a: Appointment) {
   return a.confirmed_status !== "pending" && a.showed_status !== "pending" && a.sold_status !== "pending";
 }
 
+type Timeframe = "all" | "upcoming";
+type Stage = "all" | "pending" | "confirmed" | "showed" | "sold" | "no_show";
+
+const STAGES: { value: Stage; label: string }[] = [
+  { value: "all", label: "All stages" },
+  { value: "pending", label: "Not yet confirmed" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "showed", label: "Showed" },
+  { value: "sold", label: "Sold" },
+  { value: "no_show", label: "No-show" },
+];
+
+function matchesStage(a: Appointment, stage: Stage): boolean {
+  if (stage === "all") return true;
+  if (stage === "pending") return a.confirmed_status === "pending";
+  if (stage === "confirmed") return a.confirmed_status === "yes" && a.showed_status === "pending";
+  if (stage === "showed") return a.showed_status === "yes" && a.sold_status === "pending";
+  if (stage === "sold") return a.sold_status === "yes";
+  return a.showed_status === "no";
+}
+
+function FilterIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -66,6 +95,10 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [timeframe, setTimeframe] = useState<Timeframe>("all");
+  const [stage, setStage] = useState<Stage>("all");
+  const [repFilter, setRepFilter] = useState<string>("all");
   const shimmerIds = useSoldShimmer(appointments);
 
   // The bottom-nav "+" (mobile) links to /dashboard?add=1 rather than
@@ -88,8 +121,16 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
 
   const today = todayISO();
   const scoped = useMemo(() => {
-    return appointments.filter((a) => (scope === "mine" ? a.rep_id === user.id : true));
-  }, [appointments, scope, user.id]);
+    return appointments.filter((a) => {
+      if (scope === "mine" && a.rep_id !== user.id) return false;
+      if (repFilter !== "all" && a.rep_id !== repFilter) return false;
+      if (timeframe === "upcoming" && a.appt_date < today) return false;
+      if (!matchesStage(a, stage)) return false;
+      return true;
+    });
+  }, [appointments, scope, user.id, repFilter, timeframe, stage, today]);
+
+  const activeFilterCount = (timeframe !== "all" ? 1 : 0) + (stage !== "all" ? 1 : 0) + (repFilter !== "all" ? 1 : 0);
 
   const q = query.trim().toLowerCase();
   const visible = useMemo(() => {
@@ -162,6 +203,93 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
             </select>
             <ChevronDownIcon />
           </label>
+
+          <div className="relative">
+            <button
+              onClick={() => setFiltersOpen((v) => !v)}
+              className={`pill-select cursor-pointer ${activeFilterCount > 0 ? "ring-1 ring-[var(--accent)]" : ""}`}
+              aria-expanded={filtersOpen}
+            >
+              <FilterIcon />
+              <span className="text-sm">Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
+            </button>
+
+            {filtersOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setFiltersOpen(false)} />
+                <div className="panel-strong absolute right-0 top-full mt-2 z-20 p-4 w-72 space-y-3">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1">
+                      Timeframe
+                    </label>
+                    <div className="flex field p-0.5 gap-0.5">
+                      {(["all", "upcoming"] as Timeframe[]).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setTimeframe(t)}
+                          className={`flex-1 px-2.5 py-1.5 rounded-[calc(var(--radius-md)-0.25rem)] text-xs font-medium transition-colors ${
+                            timeframe === t ? "bg-[var(--accent)] text-white" : "hover:bg-[var(--hover-surface)]"
+                          }`}
+                        >
+                          {t === "all" ? "All" : "Upcoming"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1">
+                      Stage
+                    </label>
+                    <select
+                      value={stage}
+                      onChange={(e) => setStage(e.target.value as Stage)}
+                      className="field w-full px-3 py-2 text-sm"
+                    >
+                      {STAGES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {user.role === "manager" && (
+                    <div>
+                      <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1">
+                        Rep
+                      </label>
+                      <select
+                        value={repFilter}
+                        onChange={(e) => setRepFilter(e.target.value)}
+                        className="field w-full px-3 py-2 text-sm"
+                      >
+                        <option value="all">All reps</option>
+                        {reps.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={() => {
+                        setTimeframe("all");
+                        setStage("all");
+                        setRepFilter("all");
+                      }}
+                      className="text-xs text-[var(--foreground-faint)] hover:text-[var(--foreground)]"
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
 
           {searchOpen ? (
             <div className="field flex items-center gap-2 h-11 px-3">
