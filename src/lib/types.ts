@@ -18,7 +18,7 @@ export interface Rep {
 
 export interface Appointment {
   id: string;
-  rep_id: string;
+  rep_id: string | null;
   customer_name: string;
   vehicle: string;
   appt_date: string; // YYYY-MM-DD

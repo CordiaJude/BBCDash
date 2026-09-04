@@ -186,7 +186,7 @@ export function TvBoard() {
             <div ref={singleListRef}>
               {renderList.map((a) => (
                 <div key={a.id} data-flip-id={a.id} className={fadingOut.has(a.id) ? "appt-fade-out" : "appt-card-enter"}>
-                  <AppointmentRow appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} shimmer={shimmerIds.has(a.id)} showDateLabel />
+                  <AppointmentRow appt={a} rep={repMap.get(a.rep_id ?? "")} now={now} editable={false} shimmer={shimmerIds.has(a.id)} showDateLabel />
                 </div>
               ))}
             </div>
@@ -227,7 +227,7 @@ export function TvBoard() {
                     .filter((a) => statusBucket(a) === col.key)
                     .map((a) => (
                       <div key={a.id} className="appt-card-enter">
-                        <AppointmentCard appt={a} rep={repMap.get(a.rep_id)} now={now} editable={false} compact tv shimmer={shimmerIds.has(a.id)} />
+                        <AppointmentCard appt={a} rep={repMap.get(a.rep_id ?? "")} now={now} editable={false} compact tv shimmer={shimmerIds.has(a.id)} />
                       </div>
                     ))}
                 </div>

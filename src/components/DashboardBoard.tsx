@@ -199,7 +199,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
                 <div key={a.id} className="appt-card-enter">
                   <AppointmentRow
                     appt={a}
-                    rep={repMap.get(a.rep_id)}
+                    rep={repMap.get(a.rep_id ?? "")}
                     now={now}
                     editable={user.role === "manager" || a.rep_id === user.id}
                     onStatusChange={(field, v) => setStatus(a, field, v)}
@@ -220,7 +220,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
                   <div key={a.id} className="appt-card-enter">
                     <AppointmentRow
                       appt={a}
-                      rep={repMap.get(a.rep_id)}
+                      rep={repMap.get(a.rep_id ?? "")}
                       now={now}
                       editable={user.role === "manager" || a.rep_id === user.id}
                       onStatusChange={(field, v) => setStatus(a, field, v)}

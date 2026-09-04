@@ -77,10 +77,20 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   // tv_settings.updated_by references users(id) with no ON DELETE rule
   // (default RESTRICT), so deleting whoever last touched TV settings
   // fails with a foreign-key violation unless that reference is cleared
-  // first. Deleting a rep cascades to delete their appointments too (see
-  // supabase/migrations/0001_init.sql: appointments.rep_id ... on delete
-  // cascade) — the UI warns about that before calling here.
+  // first.
   await supabase.from("tv_settings").update({ updated_by: null }).eq("updated_by", id);
+
+  // Soft-delete this rep's appointments (same as a manual delete) *before*
+  // removing the user, so they land in Recently Deleted instead of being
+  // destroyed outright. Requires supabase/migrations/0004_rep_delete_soft_deletes_appointments.sql
+  // (appointments.rep_id changed from ON DELETE CASCADE to ON DELETE SET
+  // NULL) — without it, the cascade still hard-deletes the rows before
+  // this soft-delete would matter.
+  await supabase
+    .from("appointments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("rep_id", id)
+    .is("deleted_at", null);
 
   const { error } = await supabase.from("users").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
