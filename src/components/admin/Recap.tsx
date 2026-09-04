@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Appointment, Rep } from "@/lib/types";
+import { CustomerDetailModal } from "./CustomerDetailModal";
 import {
   endOfMonthISO,
   endOfWeekISO,
@@ -46,6 +47,7 @@ export function Recap({ appointments, reps }: { appointments: Appointment[]; rep
   const [period, setPeriod] = useState<Period>("day");
   const [anchor, setAnchor] = useState(todayISO());
   const [drilldown, setDrilldown] = useState<Category | null>(null);
+  const [selected, setSelected] = useState<Appointment | null>(null);
 
   const { start, end } = useMemo(() => rangeFor(period, anchor), [period, anchor]);
 
@@ -145,7 +147,11 @@ export function Recap({ appointments, reps }: { appointments: Appointment[]; rep
               {drilldownList.map((a) => {
                 const rep = reps.find((r) => r.id === a.rep_id);
                 return (
-                  <div key={a.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-[var(--border)] last:border-none">
+                  <button
+                    key={a.id}
+                    onClick={() => setSelected(a)}
+                    className="w-full flex items-center justify-between gap-3 py-1.5 border-b border-[var(--border)] last:border-none text-left hover-surface rounded-[var(--radius-md)] px-1.5 -mx-1.5"
+                  >
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate">{a.customer_name}</div>
                       <div className="text-xs text-[var(--foreground-faint)] truncate">
@@ -155,12 +161,20 @@ export function Recap({ appointments, reps }: { appointments: Appointment[]; rep
                     <div className="text-xs text-[var(--foreground-muted)] tabular shrink-0">
                       {formatDateShort(a.appt_date)} · {formatTime12h(a.appt_time)}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           )}
         </div>
+      )}
+
+      {selected && (
+        <CustomerDetailModal
+          appointment={selected}
+          rep={reps.find((r) => r.id === selected.rep_id)}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );
