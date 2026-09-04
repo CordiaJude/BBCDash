@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useDeletedAppointments, useReps } from "@/lib/useLiveData";
+import { useDeletedAppointments } from "@/lib/useLiveData";
 import { formatDateShort, formatTime12h } from "@/lib/time";
+import type { Rep } from "@/lib/types";
 
 const RETENTION_DAYS = 7;
 
@@ -11,9 +12,8 @@ function daysLeft(deletedAt: string): number {
   return Math.max(0, Math.ceil((purgeAt - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
-export function RecentlyDeleted() {
+export function RecentlyDeleted({ reps }: { reps: Rep[] }) {
   const { appointments } = useDeletedAppointments();
-  const reps = useReps();
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   // Sweep anything past its 7-day window whenever this panel is opened —

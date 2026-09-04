@@ -16,7 +16,7 @@ export function AdminBoard() {
       <h1 className="text-headline text-2xl sm:text-3xl mb-5">Admin</h1>
       <Recap appointments={appointments} />
       {settings && <TvControls settings={settings} />}
-      <RecentlyDeleted />
+      <RecentlyDeleted reps={reps} />
       <UserManagement reps={reps} />
     </div>
   );
