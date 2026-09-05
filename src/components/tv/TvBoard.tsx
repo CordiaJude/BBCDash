@@ -8,7 +8,6 @@ import { unlockAudio, playAlertSound } from "@/lib/sounds";
 import { todayISO } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { AppointmentCard } from "../AppointmentCard";
-import { AppointmentRow, AppointmentTableHeader } from "../AppointmentRow";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { useFlipAnimation } from "@/lib/useFlipAnimation";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
@@ -193,12 +192,13 @@ export function TvBoard() {
 
       <div ref={fitContentRef} key={displayLayout} className={layoutFadeClass} style={{ transformOrigin: "top center" }}>
         {displayLayout === "single_list" && (
-          <div className="panel panel-tv w-full p-4 sm:p-6">
-            <AppointmentTableHeader />
-            <div ref={singleListRef}>
+          <div>
+            {/* Each appointment is its own frosted glass bubble — no shared
+                table/panel wrapping them — per the liquid-glass redesign. */}
+            <div ref={singleListRef} className="space-y-3">
               {renderList.map((a) => (
                 <div key={a.id} data-flip-id={a.id} className={fadingOut.has(a.id) ? "appt-fade-out" : "appt-card-enter"}>
-                  <AppointmentRow appt={a} rep={repMap.get(a.rep_id ?? "")} now={now} editable={false} shimmer={shimmerIds.has(a.id)} showDateLabel />
+                  <AppointmentCard appt={a} rep={repMap.get(a.rep_id ?? "")} now={now} editable={false} tv shimmer={shimmerIds.has(a.id)} />
                 </div>
               ))}
             </div>

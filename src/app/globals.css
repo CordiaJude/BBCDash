@@ -530,106 +530,116 @@ body {
 /*
   ---- TV liquid glass ----
   The rest of the app is deliberately flat/opaque (see the top of this
-  file), but the TV display is a showroom centerpiece, not a workspace —
-  it gets its own dark, translucent "liquid glass" material system,
-  scoped entirely under .tv-glass so nothing here leaks into the rest of
-  the app. It works by overriding the same design-token custom properties
+  file), but the TV display gets its own translucent "liquid glass"
+  material system, scoped entirely under .tv-glass so nothing here leaks
+  into the rest of the app. The page behind the glass is a plain solid
+  color — pure white in light mode, pure black in dark mode, following
+  the same theme toggle as everywhere else — and every appointment is its
+  own individual frosted "bubble" (see TvBoard.tsx), not one shared panel.
+  This works by overriding the same design-token custom properties
   (--panel, --foreground, --border, etc.) that .panel/.field/.appt-row/
   .status-circle/.pill-select already read, so every shared component
   picks up the glass palette automatically; only backdrop-filter (which
   no existing rule sets) is added explicitly below.
 */
 .tv-glass {
-  --background: transparent;
-  --panel: rgba(255, 255, 255, 0.10);
-  --panel-alt: rgba(255, 255, 255, 0.06);
-  --foreground: #f3f5fc;
-  --foreground-muted: rgba(243, 245, 252, 0.72);
-  --foreground-faint: rgba(243, 245, 252, 0.52);
-  --border: rgba(255, 255, 255, 0.16);
-  --border-strong: rgba(255, 255, 255, 0.30);
-  --hover-surface: rgba(255, 255, 255, 0.08);
-  --hover-surface-strong: rgba(255, 255, 255, 0.14);
-  --accent: #8bb0ff;
-  --accent-soft: rgba(139, 176, 255, 0.22);
-  --ok: #3fe0a5;
-  --ok-icon: #06140f;
-  --bad: #ff7a68;
-  --pending-outline: rgba(243, 245, 252, 0.45);
-  --shadow: rgba(0, 0, 0, 0.35);
-  --shadow-strong: rgba(0, 0, 0, 0.5);
-  --shadow-tv: rgba(0, 0, 0, 0.55);
+  --background: #ffffff;
+  --panel: rgba(0, 0, 0, 0.035);
+  --panel-alt: rgba(0, 0, 0, 0.02);
+  --foreground: #111114;
+  --foreground-muted: rgba(17, 17, 20, 0.68);
+  --foreground-faint: rgba(17, 17, 20, 0.46);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --hover-surface: rgba(0, 0, 0, 0.045);
+  --hover-surface-strong: rgba(0, 0, 0, 0.08);
+  --accent: #2f5fdc;
+  --accent-soft: rgba(47, 95, 220, 0.12);
+  --ok: #17a067;
+  --ok-icon: #ffffff;
+  --bad: #d5402a;
+  --pending-outline: rgba(17, 17, 20, 0.32);
+  --shadow: rgba(20, 24, 32, 0.10);
+  --shadow-strong: rgba(20, 24, 32, 0.16);
+  --shadow-tv: rgba(20, 24, 32, 0.20);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
 
   color: var(--foreground);
-  background:
-    radial-gradient(circle at 18% 15%, rgba(96, 132, 255, 0.35), transparent 55%),
-    radial-gradient(circle at 82% 8%, rgba(200, 100, 255, 0.28), transparent 50%),
-    radial-gradient(circle at 50% 100%, rgba(60, 220, 190, 0.16), transparent 60%),
-    linear-gradient(160deg, #0a0d18 0%, #121a30 45%, #1a1030 100%);
+  background: var(--background);
   position: relative;
   isolation: isolate;
 }
 
-/* Slowly drifting aurora blobs behind the glass panels — pure decoration,
-   sits at z-index 0 under the content (z-index 1, set alongside the
-   backdrop-filter rules below). */
-.tv-glass::before,
-.tv-glass::after {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  border-radius: 999px;
-  filter: blur(90px);
-  pointer-events: none;
-}
-.tv-glass::before {
-  width: 46vw;
-  height: 46vw;
-  top: -14%;
-  left: -10%;
-  background: radial-gradient(circle, rgba(96, 140, 255, 0.55), transparent 70%);
-  animation: tv-aurora-a 28s ease-in-out infinite;
-}
-.tv-glass::after {
-  width: 40vw;
-  height: 40vw;
-  bottom: -16%;
-  right: -8%;
-  background: radial-gradient(circle, rgba(210, 110, 255, 0.42), transparent 70%);
-  animation: tv-aurora-b 32s ease-in-out infinite;
-}
-@keyframes tv-aurora-a {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(4%, 6%) scale(1.08); }
-}
-@keyframes tv-aurora-b {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-5%, -5%) scale(1.1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-glass::before,
-  .tv-glass::after {
-    animation: none;
+:root[data-theme="dark"] .tv-glass,
+:root:not([data-theme="light"]) .tv-glass {
+  @media (prefers-color-scheme: dark) {
+    --background: #000000;
+    --panel: rgba(255, 255, 255, 0.08);
+    --panel-alt: rgba(255, 255, 255, 0.05);
+    --foreground: #f5f6fa;
+    --foreground-muted: rgba(245, 246, 250, 0.7);
+    --foreground-faint: rgba(245, 246, 250, 0.48);
+    --border: rgba(255, 255, 255, 0.14);
+    --border-strong: rgba(255, 255, 255, 0.24);
+    --hover-surface: rgba(255, 255, 255, 0.07);
+    --hover-surface-strong: rgba(255, 255, 255, 0.12);
+    --accent: #8bb0ff;
+    --accent-soft: rgba(139, 176, 255, 0.2);
+    --ok: #3fe0a5;
+    --ok-icon: #06140f;
+    --bad: #ff7a68;
+    --pending-outline: rgba(245, 246, 250, 0.42);
+    --shadow: rgba(0, 0, 0, 0.4);
+    --shadow-strong: rgba(0, 0, 0, 0.55);
+    --shadow-tv: rgba(0, 0, 0, 0.6);
+    --glass-highlight: rgba(255, 255, 255, 0.16);
   }
 }
 
+/* Same explicit dark override as the rest of the app — wins over the
+   prefers-color-scheme block above when the user has forced dark mode
+   regardless of the OS setting. */
+:root[data-theme="dark"] .tv-glass {
+  --background: #000000;
+  --panel: rgba(255, 255, 255, 0.08);
+  --panel-alt: rgba(255, 255, 255, 0.05);
+  --foreground: #f5f6fa;
+  --foreground-muted: rgba(245, 246, 250, 0.7);
+  --foreground-faint: rgba(245, 246, 250, 0.48);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --hover-surface: rgba(255, 255, 255, 0.07);
+  --hover-surface-strong: rgba(255, 255, 255, 0.12);
+  --accent: #8bb0ff;
+  --accent-soft: rgba(139, 176, 255, 0.2);
+  --ok: #3fe0a5;
+  --ok-icon: #06140f;
+  --bad: #ff7a68;
+  --pending-outline: rgba(245, 246, 250, 0.42);
+  --shadow: rgba(0, 0, 0, 0.4);
+  --shadow-strong: rgba(0, 0, 0, 0.55);
+  --shadow-tv: rgba(0, 0, 0, 0.6);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+}
+
 /* Real glass needs blur + a bright top edge where light catches it —
-   the one thing token overrides above can't express. */
+   the one thing token overrides above can't express. Every bubble
+   (appointment card, field chip, pill) gets the same treatment. */
 .tv-glass .panel,
 .tv-glass .panel-strong,
 .tv-glass .field,
 .tv-glass .pill-select {
   position: relative;
   z-index: 1;
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-top-color: rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top-color: var(--glass-highlight);
 }
 .tv-glass .panel-tv {
-  box-shadow: 0 32px 90px -30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: 0 20px 48px -22px var(--shadow-tv), 0 2px 10px -4px var(--shadow), inset 0 1px 0 var(--glass-highlight);
 }
 .tv-glass .appt-row.clickable:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--hover-surface);
 }
 
 /*
