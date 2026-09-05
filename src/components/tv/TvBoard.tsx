@@ -8,6 +8,7 @@ import { unlockAudio, playAlertSound } from "@/lib/sounds";
 import { todayISO } from "@/lib/time";
 import type { Appointment } from "@/lib/types";
 import { AppointmentCard } from "../AppointmentCard";
+import { AppointmentRow, AppointmentTableHeader } from "../AppointmentRow";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { useFlipAnimation } from "@/lib/useFlipAnimation";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
@@ -160,7 +161,7 @@ export function TvBoard() {
   );
 
   return (
-    <div className="tv-glass relative min-h-dvh p-4 sm:p-6">
+    <div className="relative min-h-dvh p-4 sm:p-6">
       {settings?.alerts_enabled && !soundUnlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <button onClick={enableSound} className="panel-strong px-10 py-7 text-xl font-semibold hover:bg-[var(--panel-alt)] transition-colors">
@@ -182,13 +183,12 @@ export function TvBoard() {
 
       <div key={displayLayout} className={layoutFadeClass}>
         {displayLayout === "single_list" && (
-          <div>
-            {/* Each appointment is its own frosted glass bubble — no shared
-                table/panel wrapping them — per the liquid-glass redesign. */}
-            <div ref={singleListRef} className="space-y-3">
+          <div className="panel panel-tv w-full p-4 sm:p-6">
+            <AppointmentTableHeader />
+            <div ref={singleListRef}>
               {renderList.map((a) => (
                 <div key={a.id} data-flip-id={a.id} className={fadingOut.has(a.id) ? "appt-fade-out" : "appt-card-enter"}>
-                  <AppointmentCard appt={a} rep={repMap.get(a.rep_id ?? "")} now={now} editable={false} tv shimmer={shimmerIds.has(a.id)} />
+                  <AppointmentRow appt={a} rep={repMap.get(a.rep_id ?? "")} now={now} editable={false} shimmer={shimmerIds.has(a.id)} showDateLabel />
                 </div>
               ))}
             </div>
