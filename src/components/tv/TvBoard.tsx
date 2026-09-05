@@ -11,7 +11,6 @@ import { AppointmentCard } from "../AppointmentCard";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { useFlipAnimation } from "@/lib/useFlipAnimation";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
-import { useFitScale } from "@/lib/useFitScale";
 import { EmptyState } from "@/components/EmptyState";
 
 const ROLLOFF_FADE_MS = 1000;
@@ -160,17 +159,8 @@ export function TvBoard() {
     !reducedMotion
   );
 
-  // Shrinks the whole board (via CSS zoom) so every upcoming appointment
-  // fits on screen with no scrolling, re-measuring whenever the row count
-  // or layout mode changes.
-  const { containerRef: fitContainerRef, contentRef: fitContentRef } = useFitScale([
-    renderList.length,
-    displayLayout,
-    reps.length,
-  ]);
-
   return (
-    <div ref={fitContainerRef} className="tv-glass relative h-dvh overflow-hidden p-4 sm:p-6">
+    <div className="tv-glass relative min-h-dvh p-4 sm:p-6">
       {settings?.alerts_enabled && !soundUnlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <button onClick={enableSound} className="panel-strong px-10 py-7 text-xl font-semibold hover:bg-[var(--panel-alt)] transition-colors">
@@ -190,7 +180,7 @@ export function TvBoard() {
 
       {!loaded && <p className="text-secondary text-lg">Loading…</p>}
 
-      <div ref={fitContentRef} key={displayLayout} className={layoutFadeClass} style={{ transformOrigin: "top center" }}>
+      <div key={displayLayout} className={layoutFadeClass}>
         {displayLayout === "single_list" && (
           <div>
             {/* Each appointment is its own frosted glass bubble — no shared
