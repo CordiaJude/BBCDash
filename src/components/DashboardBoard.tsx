@@ -9,6 +9,7 @@ import { useNowTick } from "@/lib/useNowTick";
 import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { EmptyState } from "@/components/EmptyState";
 import { AppointmentRow, AppointmentTableHeader } from "./AppointmentRow";
+import { AppointmentCard } from "./AppointmentCard";
 import { AppointmentModal } from "./AppointmentModal";
 import { todayISO } from "@/lib/time";
 
@@ -151,7 +152,10 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
     return conflicted;
   }, [appointments]);
 
-  const active = visible.filter((a) => !isComplete(a) || a.appt_date !== today);
+  const active = visible
+    .filter((a) => !isComplete(a) || a.appt_date !== today)
+    .slice()
+    .sort((a, b) => (a.appt_date + a.appt_time).localeCompare(b.appt_date + b.appt_time));
   const completedToday = visible.filter((a) => isComplete(a) && a.appt_date === today);
 
   async function setStatus(appt: Appointment, field: "confirmed_status" | "showed_status" | "sold_status", value: TriState) {
@@ -184,7 +188,7 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
       <div className="flex flex-wrap items-start sm:items-center justify-between gap-3 mb-5">
         <h1 className="text-headline text-2xl sm:text-3xl">Today&rsquo;s Dashboard</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Date/scope selector pill — icon + text + chevron, reusing the
               existing "mine"/"everyone" scope (no per-day filter exists in
               the data layer to wire a real date-picker to without adding
@@ -326,27 +330,29 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
 
       {!loaded && <p className="text-sm text-[var(--foreground-muted)]">Loading…</p>}
 
-      <div className="overflow-x-auto -mx-1">
+      {/* Desktop/tablet: the full multi-column table (unchanged). Below the
+          sm breakpoint it's replaced entirely by a stacked card list (see
+          below) rather than letting it scroll sideways — a table with this
+          many columns can't be shrunk to a phone width without squishing
+          the text into illegibility. */}
+      <div className="hidden sm:block overflow-x-auto -mx-1">
         <div className="min-w-[760px] px-1">
           <AppointmentTableHeader />
           <div>
-            {active
-              .slice()
-              .sort((a, b) => (a.appt_date + a.appt_time).localeCompare(b.appt_date + b.appt_time))
-              .map((a) => (
-                <div key={a.id} className="appt-card-enter">
-                  <AppointmentRow
-                    appt={a}
-                    rep={repMap.get(a.rep_id ?? "")}
-                    now={now}
-                    editable={user.role === "manager" || a.rep_id === user.id}
-                    onStatusChange={(field, v) => setStatus(a, field, v)}
-                    onClick={() => openEdit(a)}
-                    hasConflict={conflictKeys.has(`${a.rep_id}|${a.appt_date}|${a.appt_time}`)}
-                    shimmer={shimmerIds.has(a.id)}
-                  />
-                </div>
-              ))}
+            {active.map((a) => (
+              <div key={a.id} className="appt-card-enter">
+                <AppointmentRow
+                  appt={a}
+                  rep={repMap.get(a.rep_id ?? "")}
+                  now={now}
+                  editable={user.role === "manager" || a.rep_id === user.id}
+                  onStatusChange={(field, v) => setStatus(a, field, v)}
+                  onClick={() => openEdit(a)}
+                  hasConflict={conflictKeys.has(`${a.rep_id}|${a.appt_date}|${a.appt_time}`)}
+                  shimmer={shimmerIds.has(a.id)}
+                />
+              </div>
+            ))}
           </div>
           {loaded && active.length === 0 && <EmptyState message="No appointments here yet." />}
 
@@ -371,6 +377,47 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile: one stacked column of full-width cards, no side-scrolling
+          and nothing squeezed — same data, same taps, different shape. */}
+      <div className="sm:hidden space-y-2.5">
+        {active.map((a) => (
+          <div key={a.id} className="appt-card-enter">
+            <AppointmentCard
+              appt={a}
+              rep={repMap.get(a.rep_id ?? "")}
+              now={now}
+              editable={user.role === "manager" || a.rep_id === user.id}
+              onStatusChange={(field, v) => setStatus(a, field, v)}
+              onClick={() => openEdit(a)}
+              hasConflict={conflictKeys.has(`${a.rep_id}|${a.appt_date}|${a.appt_time}`)}
+              shimmer={shimmerIds.has(a.id)}
+            />
+          </div>
+        ))}
+        {loaded && active.length === 0 && <EmptyState message="No appointments here yet." />}
+
+        {completedToday.length > 0 && (
+          <div className="pt-4">
+            <h3 className="text-label mb-2 ml-1">Completed today</h3>
+            <div className="space-y-2.5 opacity-90">
+              {completedToday.map((a) => (
+                <div key={a.id} className="appt-card-enter">
+                  <AppointmentCard
+                    appt={a}
+                    rep={repMap.get(a.rep_id ?? "")}
+                    now={now}
+                    editable={user.role === "manager" || a.rep_id === user.id}
+                    onStatusChange={(field, v) => setStatus(a, field, v)}
+                    onClick={() => openEdit(a)}
+                    shimmer={shimmerIds.has(a.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {modalOpen && (

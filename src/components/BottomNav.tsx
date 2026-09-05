@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/types";
 import { NAV_ITEMS } from "./Sidebar";
 import clsx from "clsx";
@@ -10,14 +10,6 @@ function PlusIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-    </svg>
-  );
-}
-function LogoutIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -31,20 +23,16 @@ function LogoutIcon() {
  * "+" button calls, just reached via navigation instead of local state,
  * since the FAB can be tapped from any page (TV excluded — no bottom nav
  * there) including ones that don't own the modal themselves.
+ *
+ * No log-out button here — it lives on the Settings tab instead, so this
+ * bar stays purely navigational.
  */
 export function BottomNav({ user }: { user: SessionUser }) {
   const pathname = usePathname();
-  const router = useRouter();
   const items = NAV_ITEMS(user.role);
   const mid = Math.ceil(items.length / 2);
   const left = items.slice(0, mid);
   const right = items.slice(mid);
-
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
     <nav
@@ -68,11 +56,6 @@ export function BottomNav({ user }: { user: SessionUser }) {
         {right.map((item) => (
           <NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} active={pathname.startsWith(item.href)} />
         ))}
-
-        <button onClick={logout} className="bottom-nav-item ml-auto" aria-label="Log out">
-          <LogoutIcon />
-          <span>Log out</span>
-        </button>
       </div>
     </nav>
   );

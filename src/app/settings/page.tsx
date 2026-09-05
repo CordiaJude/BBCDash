@@ -5,6 +5,5 @@ import { SettingsBoard } from "@/components/admin/SettingsBoard";
 export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (session.role !== "manager") redirect("/dashboard");
-  return <SettingsBoard />;
+  return <SettingsBoard user={session} />;
 }

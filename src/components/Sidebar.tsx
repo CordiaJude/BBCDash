@@ -23,14 +23,6 @@ function AdminIcon() {
     </svg>
   );
 }
-function TvIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="5" width="18" height="13" rx="2" />
-      <path d="M8 21h8M12 18v3" strokeLinecap="round" />
-    </svg>
-  );
-}
 function LogoutIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -52,11 +44,13 @@ function SettingsIcon() {
   );
 }
 
+// TV Display is intentionally not a nav item — it's a standalone kiosk
+// view (reached by its own URL on the TV's browser), not part of the
+// phone/desktop web app navigation.
 export const NAV_ITEMS = (role: SessionUser["role"]) => [
   { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
   ...(role === "manager" ? [{ href: "/admin", label: "Admin", icon: AdminIcon }] : []),
-  { href: "/tv", label: "TV Display", icon: TvIcon },
-  ...(role === "manager" ? [{ href: "/settings", label: "Settings", icon: SettingsIcon }] : []),
+  { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 /** Desktop icon-only vertical sidebar. Hidden below the sm breakpoint, where BottomNav takes over. */
