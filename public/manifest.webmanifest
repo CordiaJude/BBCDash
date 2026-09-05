@@ -1,6 +1,6 @@
 {
-  "name": "Appointment Board",
-  "short_name": "Appt Board",
+  "name": "DriveBoard",
+  "short_name": "DriveBoard",
   "description": "Dealership sales appointment board",
   "start_url": "/dashboard",
   "scope": "/",

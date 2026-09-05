@@ -84,7 +84,7 @@ function LoginForm() {
         onSubmit={submit}
         className="panel-strong login-panel-enter login-panel-tilt w-full max-w-sm p-8"
       >
-        <h1 className="text-xl font-semibold text-center mb-1">Appointment Board</h1>
+        <h1 className="text-xl font-semibold text-center mb-1">DriveBoard</h1>
         <p className="text-sm text-[var(--foreground-muted)] text-center mb-6">Sign in with your email and password</p>
 
         <label className="block text-xs uppercase tracking-wide text-[var(--foreground-muted)] mb-1" htmlFor="email">

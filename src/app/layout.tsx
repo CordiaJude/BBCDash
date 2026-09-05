@@ -14,11 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Appointment Board",
+  title: "DriveBoard",
   description: "Dealership sales appointment board",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icons/icon-180.png",
   },
   // Standalone launch (no Safari chrome) + a native-feeling status bar
@@ -26,7 +29,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Appt Board",
+    title: "DriveBoard",
   },
 };
 
