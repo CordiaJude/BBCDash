@@ -161,7 +161,7 @@ export function TvBoard() {
   );
 
   return (
-    <div className="relative min-h-dvh p-4 sm:p-6">
+    <div className="tv-glass relative min-h-dvh p-4 sm:p-6">
       {settings?.alerts_enabled && !soundUnlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <button onClick={enableSound} className="panel-strong px-10 py-7 text-xl font-semibold hover:bg-[var(--panel-alt)] transition-colors">
