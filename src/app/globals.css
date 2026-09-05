@@ -528,6 +528,111 @@ body {
 .layout-fade-out { animation: layout-fade-out 200ms ease both; }
 
 /*
+  ---- TV liquid glass ----
+  The rest of the app is deliberately flat/opaque (see the top of this
+  file), but the TV display is a showroom centerpiece, not a workspace —
+  it gets its own dark, translucent "liquid glass" material system,
+  scoped entirely under .tv-glass so nothing here leaks into the rest of
+  the app. It works by overriding the same design-token custom properties
+  (--panel, --foreground, --border, etc.) that .panel/.field/.appt-row/
+  .status-circle/.pill-select already read, so every shared component
+  picks up the glass palette automatically; only backdrop-filter (which
+  no existing rule sets) is added explicitly below.
+*/
+.tv-glass {
+  --background: transparent;
+  --panel: rgba(255, 255, 255, 0.10);
+  --panel-alt: rgba(255, 255, 255, 0.06);
+  --foreground: #f3f5fc;
+  --foreground-muted: rgba(243, 245, 252, 0.72);
+  --foreground-faint: rgba(243, 245, 252, 0.52);
+  --border: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.30);
+  --hover-surface: rgba(255, 255, 255, 0.08);
+  --hover-surface-strong: rgba(255, 255, 255, 0.14);
+  --accent: #8bb0ff;
+  --accent-soft: rgba(139, 176, 255, 0.22);
+  --ok: #3fe0a5;
+  --ok-icon: #06140f;
+  --bad: #ff7a68;
+  --pending-outline: rgba(243, 245, 252, 0.45);
+  --shadow: rgba(0, 0, 0, 0.35);
+  --shadow-strong: rgba(0, 0, 0, 0.5);
+  --shadow-tv: rgba(0, 0, 0, 0.55);
+
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 18% 15%, rgba(96, 132, 255, 0.35), transparent 55%),
+    radial-gradient(circle at 82% 8%, rgba(200, 100, 255, 0.28), transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(60, 220, 190, 0.16), transparent 60%),
+    linear-gradient(160deg, #0a0d18 0%, #121a30 45%, #1a1030 100%);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Slowly drifting aurora blobs behind the glass panels — pure decoration,
+   sits at z-index 0 under the content (z-index 1, set alongside the
+   backdrop-filter rules below). */
+.tv-glass::before,
+.tv-glass::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  filter: blur(90px);
+  pointer-events: none;
+}
+.tv-glass::before {
+  width: 46vw;
+  height: 46vw;
+  top: -14%;
+  left: -10%;
+  background: radial-gradient(circle, rgba(96, 140, 255, 0.55), transparent 70%);
+  animation: tv-aurora-a 28s ease-in-out infinite;
+}
+.tv-glass::after {
+  width: 40vw;
+  height: 40vw;
+  bottom: -16%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(210, 110, 255, 0.42), transparent 70%);
+  animation: tv-aurora-b 32s ease-in-out infinite;
+}
+@keyframes tv-aurora-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(4%, 6%) scale(1.08); }
+}
+@keyframes tv-aurora-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-5%, -5%) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-glass::before,
+  .tv-glass::after {
+    animation: none;
+  }
+}
+
+/* Real glass needs blur + a bright top edge where light catches it —
+   the one thing token overrides above can't express. */
+.tv-glass .panel,
+.tv-glass .panel-strong,
+.tv-glass .field,
+.tv-glass .pill-select {
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top-color: rgba(255, 255, 255, 0.38);
+}
+.tv-glass .panel-tv {
+  box-shadow: 0 32px 90px -30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.tv-glass .appt-row.clickable:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/*
   ---- prefers-reduced-motion: one shared gate for every CSS animation and
   transition above. Collapses every declared animation/transition to
   effectively instant rather than disabling individual rules by name, so
