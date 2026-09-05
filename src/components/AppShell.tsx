@@ -12,9 +12,9 @@ import { BottomNav } from "./BottomNav";
  */
 export function AppShell({ user, children }: { user: SessionUser; children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh flex flex-col sm:flex-row gap-4 p-3 sm:p-5 pb-24 sm:pb-5">
+    <div className="min-h-dvh flex flex-col sm:flex-row gap-4 p-3 sm:p-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-5">
       <Sidebar user={user} />
-      <main className="panel flex-1 min-w-0 p-4 sm:p-6">{children}</main>
+      <main className="panel flex-1 min-w-0 p-4 sm:p-6 overflow-x-hidden">{children}</main>
       <BottomNav user={user} />
     </div>
   );

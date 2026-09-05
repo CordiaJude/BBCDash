@@ -142,7 +142,7 @@ export function UserManagement({ reps }: { reps: Rep[] }) {
 
       <div className="space-y-2">
         {reps.map((r) => (
-          <div key={r.id} className="field flex items-center justify-between gap-3 p-3">
+          <div key={r.id} className="field flex flex-wrap items-center justify-between gap-3 p-3">
             <div className="flex items-center gap-3 min-w-0">
               <button onClick={() => fileInputs.current[r.id]?.click()} title="Change photo">
                 <RepAvatar rep={r} size={36} />

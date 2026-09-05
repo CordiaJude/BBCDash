@@ -85,7 +85,7 @@ export function Recap({ appointments, reps, user }: { appointments: Appointment[
   }
 
   const controls = (
-    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
       <div className="flex field p-0.5 gap-0.5">
         {PERIODS.map((p) => (
           <button

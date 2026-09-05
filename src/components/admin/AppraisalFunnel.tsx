@@ -162,7 +162,7 @@ export function AppraisalFunnel({ appointments, reps }: { appointments: Appointm
   }
 
   const controls = (
-    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
       <div className="flex field p-0.5 gap-0.5">
         {PERIODS.map((p) => (
           <button
@@ -210,7 +210,7 @@ export function AppraisalFunnel({ appointments, reps }: { appointments: Appointm
       <div className="space-y-1.5 mb-6">
         {funnelCounts.map(({ step, count }) => (
           <div key={step.key} className="flex items-center gap-2">
-            <span className="text-xs w-64 shrink-0 truncate text-[var(--foreground-muted)]">
+            <span className="text-xs w-24 sm:w-64 shrink-0 truncate text-[var(--foreground-muted)]">
               {step.phase === "mgm" ? "MGM" : "Appraisal"} {step.index} · {step.label}
             </span>
             <div className="field h-5 flex-1 p-0 overflow-hidden">

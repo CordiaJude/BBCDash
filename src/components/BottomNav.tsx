@@ -49,7 +49,8 @@ export function BottomNav({ user }: { user: SessionUser }) {
   return (
     <nav
       aria-label="Primary"
-      className="sm:hidden fixed bottom-4 left-4 right-4 z-30 flex items-center justify-center"
+      className="sm:hidden fixed left-4 right-4 z-30 flex items-center justify-center"
+      style={{ bottom: "calc(1rem + env(safe-area-inset-bottom))" }}
     >
       <div className="bottom-nav-bar relative flex items-center gap-1 px-3 py-2 w-full max-w-sm mx-auto">
         {left.map((item) => (

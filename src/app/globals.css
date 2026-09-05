@@ -107,6 +107,12 @@ body {
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, var(--font-sans), "Segoe UI", Arial, Helvetica, sans-serif;
   min-height: 100dvh;
+  /* Safety net against any single element accidentally forcing horizontal
+     scroll on narrow/PWA viewports — elements that intentionally scroll
+     sideways (the dashboard's own appointment table) set their own
+     overflow-x:auto on an inner wrapper, which still works fine nested
+     inside this. */
+  overflow-x: hidden;
 }
 
 /* Numbers/times/dates: same system-sans stack as the rest of the app

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -16,6 +16,33 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Appointment Board",
   description: "Dealership sales appointment board",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icons/icon-180.png",
+  },
+  // Standalone launch (no Safari chrome) + a native-feeling status bar
+  // when added to the iOS home screen.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Appt Board",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  // Lets fixed chrome (bottom nav, TV clock chip) extend into the safe
+  // area on notched/home-indicator iOS devices instead of stopping short
+  // of the edge — combined with env(safe-area-inset-*) padding below.
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0d12" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

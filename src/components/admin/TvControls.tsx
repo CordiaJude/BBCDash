@@ -99,9 +99,9 @@ export function TvControls({ settings }: { settings: TvSettings }) {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
-          className="field px-3 py-1.5 text-sm tabular w-48"
+          className="field px-3 py-1.5 text-sm tabular w-full sm:w-48"
           value={offsetsText}
           onChange={(e) => setOffsetsText(e.target.value)}
           placeholder="30, 15"
@@ -114,7 +114,9 @@ export function TvControls({ settings }: { settings: TvSettings }) {
         >
           Save
         </button>
-        <span className="text-xs text-[var(--foreground-muted)]">minutes before start, comma separated</span>
+        <span className="text-xs text-[var(--foreground-muted)] basis-full sm:basis-auto">
+          minutes before start, comma separated
+        </span>
       </div>
     </div>
   );
