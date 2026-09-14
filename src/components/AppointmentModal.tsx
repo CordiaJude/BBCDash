@@ -38,6 +38,9 @@ export function AppointmentModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState(appointment?.appt_date ?? todayISO());
+  const [rescheduleTime, setRescheduleTime] = useState(appointment?.appt_time ?? "09:00:00");
   const reducedMotion = usePrefersReducedMotion();
 
   // Subtle scale+fade exit: run the CSS exit animation, then actually
@@ -104,6 +107,53 @@ export function AppointmentModal({
     } catch {
       setError("Network error.");
       setSaving(false);
+    }
+  }
+
+  // Marks the appointment as cancelled by turning every status circle
+  // that hasn't been checked off yet into a red X, without touching any
+  // status the rep/manager already set (e.g. a confirmed-but-not-yet-shown
+  // appointment keeps its green "confirmed" check).
+  const pendingFields = appointment
+    ? (["confirmed_status", "showed_status", "sold_status"] as const).filter((f) => appointment[f] === "pending")
+    : [];
+
+  async function cancelAppointment() {
+    if (!appointment || pendingFields.length === 0) return;
+    if (!confirm(`Cancel the appointment for ${appointment.customer_name}? Every not-yet-set status will be marked as declined.`))
+      return;
+    setSaving(true);
+    setError(null);
+    const payload = Object.fromEntries(pendingFields.map((f) => [f, "no"]));
+    const res = await fetch(`/api/appointments/${appointment.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    setSaving(false);
+    if (res.ok) {
+      requestClose(onSaved);
+    } else {
+      setError("Failed to cancel.");
+    }
+  }
+
+  async function confirmReschedule() {
+    if (!appointment) return;
+    setSaving(true);
+    setError(null);
+    const res = await fetch(`/api/appointments/${appointment.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ appt_date: rescheduleDate, appt_time: rescheduleTime }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setApptDate(rescheduleDate);
+      setApptTime(rescheduleTime);
+      setRescheduling(false);
+    } else {
+      setError("Failed to reschedule.");
     }
   }
 
@@ -257,8 +307,8 @@ export function AppointmentModal({
 
         {error && <p className="text-sm text-[var(--bad)] mt-3">{error}</p>}
 
-        <div className="flex items-center justify-between mt-5">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-5">
+          <div className="flex flex-wrap items-center gap-3">
             {isEdit && isManager && (
               <button
                 onClick={remove}
@@ -268,13 +318,36 @@ export function AppointmentModal({
                 Delete appointment
               </button>
             )}
+            {isEdit && canEditAll && (
+              <button
+                onClick={cancelAppointment}
+                disabled={saving || pendingFields.length === 0}
+                title={pendingFields.length === 0 ? "Nothing left pending to cancel" : undefined}
+                className="text-sm text-[var(--bad)] hover:underline disabled:opacity-40 disabled:hover:no-underline"
+              >
+                Cancel appointment
+              </button>
+            )}
+            {isEdit && canEditAll && (
+              <button
+                onClick={() => {
+                  setRescheduleDate(apptDate);
+                  setRescheduleTime(apptTime);
+                  setRescheduling(true);
+                }}
+                disabled={saving}
+                className="text-sm text-[var(--accent)] hover:underline disabled:opacity-50"
+              >
+                Reschedule
+              </button>
+            )}
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => requestClose(onClose)}
               className="field px-4 py-2 text-sm hover:bg-[var(--hover-surface-strong)]"
             >
-              Cancel
+              Close
             </button>
             {canEditAll && (
               <button
@@ -288,6 +361,54 @@ export function AppointmentModal({
           </div>
         </div>
       </div>
+
+      {rescheduling && appointment && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/45"
+          onClick={(e) => {
+            e.stopPropagation();
+            setRescheduling(false);
+          }}
+        >
+          <div className="panel-strong w-full max-w-xs p-5 modal-panel-in" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-headline text-lg mb-3">Reschedule</h3>
+            <Field label="New date">
+              <input
+                type="date"
+                className="field w-full px-3 py-2 tabular mb-3"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            <Field label="New time">
+              <select
+                className="field w-full px-3 py-2 tabular"
+                value={rescheduleTime}
+                onChange={(e) => setRescheduleTime(e.target.value)}
+              >
+                {TIME_SLOTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setRescheduling(false)} className="field px-4 py-2 text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={confirmReschedule}
+                disabled={saving}
+                className="px-4 py-2 text-sm rounded-2xl font-medium bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-60 transition"
+              >
+                {saving ? "Saving…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
