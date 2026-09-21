@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "DriveBoard",
+  "short_name": "DriveBoard",
+  "version": "1.0.0",
+  "description": "Quick-add appointments, live stats, desk alerts, and vAuto/KBB capture for DriveBoard.",
+  "icons": {
+    "32": "icons/icon-32.png",
+    "192": "icons/icon-192.png",
+    "512": "icons/icon-512.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "32": "icons/icon-32.png"
+    },
+    "default_title": "DriveBoard"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "alarms", "notifications", "contextMenus"],
+  "host_permissions": ["https://dealership-appointment-board.vercel.app/*"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.vauto.com/*",
+        "*://*.kbb.com/*",
+        "*://*.dealercenter.net/*",
+        "*://*.carfax.com/*",
+        "*://*.vinaudit.com/*"
+      ],
+      "js": ["content-capture.js"],
+      "css": ["content-capture.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html"
+}

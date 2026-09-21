@@ -1,0 +1,207 @@
+:root {
+  --accent: #3568d4;
+  --accent-soft: #eef4fe;
+  --bg: #fbfbfc;
+  --panel: #ffffff;
+  --border: #e5e7eb;
+  --fg: #16181c;
+  --fg-muted: #52565c;
+  --fg-faint: #6b7078;
+  --ok: #167a4c;
+  --bad: #b8391f;
+  --radius: 0.875rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 340px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+
+body.wide {
+  width: 420px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 650;
+  font-size: 14px;
+}
+.header img {
+  border-radius: 6px;
+  display: block;
+}
+.header .spacer {
+  flex: 1;
+}
+
+.pad {
+  padding: 14px 16px 16px;
+}
+
+label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  margin: 10px 0 4px;
+}
+label:first-of-type {
+  margin-top: 0;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius) - 0.3rem);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--fg);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-primary {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--fg-faint);
+  font: inherit;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.link-btn:hover {
+  color: var(--fg);
+}
+
+.error {
+  color: var(--bad);
+  font-size: 12px;
+  min-height: 1em;
+  margin: 6px 0 0;
+}
+.success {
+  color: var(--ok);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.2rem);
+  padding: 8px 4px;
+  text-align: center;
+}
+.stat b {
+  display: block;
+  font-size: 17px;
+}
+.stat span {
+  font-size: 10px;
+  color: var(--fg-muted);
+}
+
+.next {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin: 0 0 14px;
+}
+.next.muted {
+  opacity: 0.7;
+}
+
+h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+  margin: 0 0 8px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.links a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+}
+.links a:hover {
+  text-decoration: underline;
+}
+
+.center-note {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--fg-muted);
+}
+
+/* Used by quickadd.html, which opens as a full tab rather than a popup. */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 60px -28px rgba(20, 24, 32, 0.16);
+  overflow: hidden;
+}

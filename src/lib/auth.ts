@@ -1,6 +1,7 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 import type { SessionUser } from "./types";
 
 const COOKIE_NAME = "dab_session";
@@ -12,13 +13,20 @@ function getSecret() {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSessionCookie(user: SessionUser) {
-  const token = await new SignJWT({ ...user })
+// Shared by the httpOnly session cookie and the bearer token handed to the
+// Chrome extension (which can't rely on the cookie — it's SameSite=lax and
+// a chrome-extension:// origin is cross-site, so the browser won't attach
+// it to the extension's fetches). Same signature, same claims either way.
+export async function signSessionToken(user: SessionUser): Promise<string> {
+  return new SignJWT({ ...user })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
     .sign(getSecret());
+}
 
+export async function createSessionCookie(user: SessionUser) {
+  const token = await signSessionToken(user);
   const store = await cookies();
   store.set(COOKIE_NAME, token, {
     httpOnly: true,
@@ -65,6 +73,17 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
   } catch {
     return null;
   }
+}
+
+// Used by API routes the Chrome extension calls: checks the extension's
+// Authorization: Bearer <token> header first, falls back to the normal
+// session cookie so the same route still works from the web app.
+export async function getSessionFromRequest(req: NextRequest): Promise<SessionUser | null> {
+  const auth = req.headers.get("authorization");
+  if (auth?.startsWith("Bearer ")) {
+    return verifySessionToken(auth.slice("Bearer ".length));
+  }
+  return getSession();
 }
 
 export const SESSION_COOKIE_NAME = COOKIE_NAME;

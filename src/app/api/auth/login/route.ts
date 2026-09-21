@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createSessionCookie } from "@/lib/auth";
+import { createSessionCookie, signSessionToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -28,16 +28,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   }
 
-  await createSessionCookie({
+  const sessionUser = {
     id: user.id,
     email: user.email,
     display_name: user.display_name,
     role: user.role,
     color_hex: user.color_hex,
-  });
+  };
+  await createSessionCookie(sessionUser);
+
+  // Also returned in the body (not just set as a cookie) so the Chrome
+  // extension — a cross-site chrome-extension:// origin the SameSite=lax
+  // cookie won't reach — can store it itself and send it back as a bearer
+  // token. Harmless for the normal web login flow, which just ignores it.
+  const token = await signSessionToken(sessionUser);
 
   return NextResponse.json({
     ok: true,
+    token,
     user: { role: user.role, display_name: user.display_name },
   });
 }

@@ -1,9 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getSession } from "@/lib/auth";
+import { getSessionFromRequest } from "@/lib/auth";
+
+// Used by the web app's own realtime hooks only indirectly (those read
+// Supabase directly with the anon key) — this GET exists for callers that
+// can't do that, namely the Chrome extension's popup stats/notifications,
+// authenticated via bearer token instead of the session cookie.
+export async function GET(req: NextRequest) {
+  const session = await getSessionFromRequest(req);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const scope = searchParams.get("scope") === "everyone" ? "everyone" : "mine";
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("appointments")
+    .select("*")
+    .is("deleted_at", null)
+    .order("appt_date", { ascending: true })
+    .order("appt_time", { ascending: true });
+
+  // Reps only ever see their own appointments through this endpoint,
+  // regardless of the requested scope — same rule the dashboard's
+  // mine/everyone toggle enforces client-side for managers only.
+  if (session.role !== "manager" || scope === "mine") {
+    query = query.eq("rep_id", session.id);
+  }
+  if (from) query = query.gte("appt_date", from);
+  if (to) query = query.lte("appt_date", to);
+
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ appointments: data ?? [] });
+}
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
+  const session = await getSessionFromRequest(req);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
