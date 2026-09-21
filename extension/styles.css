@@ -1,62 +1,134 @@
+/* Same design tokens as the website's globals.css — flat, opaque panels
+   floating on a cool-gray ground, large consistent radii, no gradients or
+   blur. Kept in sync by hand since this is a separate build (a Chrome
+   extension can't import the Next.js app's CSS module). */
 :root {
+  --background: #fbfbfc;
+  --panel: #ffffff;
+  --panel-alt: #fafafb;
+  --foreground: #16181c;
+  --foreground-muted: #52565c;
+  --foreground-faint: #6b7078;
+  --border: #e5e7eb;
+  --border-strong: #d8dbe0;
+  --hover-surface: #eff1f4;
+  --hover-surface-strong: #e7e9ed;
   --accent: #3568d4;
   --accent-soft: #eef4fe;
-  --bg: #fbfbfc;
-  --panel: #ffffff;
-  --border: #e5e7eb;
-  --fg: #16181c;
-  --fg-muted: #52565c;
-  --fg-faint: #6b7078;
   --ok: #167a4c;
+  --ok-icon: #ffffff;
   --bad: #b8391f;
-  --radius: 0.875rem;
+  --pending-outline: #6b7078;
+  --shadow: rgba(20, 24, 32, 0.1);
+  --shadow-strong: rgba(20, 24, 32, 0.16);
+  --radius-lg: 1.25rem;
+  --radius-md: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0d12;
+    --panel: #171a21;
+    --panel-alt: #1d2029;
+    --foreground: #eceef2;
+    --foreground-muted: #9ca3af;
+    --foreground-faint: #7d8590;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --hover-surface: rgba(255, 255, 255, 0.06);
+    --hover-surface-strong: rgba(255, 255, 255, 0.1);
+    --accent: #6fa0ff;
+    --accent-soft: rgba(111, 160, 255, 0.16);
+    --ok: #4fd39f;
+    --ok-icon: #0b0d12;
+    --bad: #ff8368;
+    --pending-outline: #7d8590;
+    --shadow: rgba(0, 0, 0, 0.45);
+    --shadow-strong: rgba(0, 0, 0, 0.55);
+  }
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  width: 340px;
-  background: var(--bg);
-  color: var(--fg);
-  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  padding: 0;
 }
 
-body.wide {
-  width: 420px;
+body {
+  width: 360px;
+  background: var(--background);
+  color: var(--foreground);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+body.page {
+  width: auto;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+/* ---- Typography, matching the site's text-headline/secondary/label ---- */
+.text-headline {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+.text-secondary {
+  font-weight: 500;
+  color: var(--foreground-muted);
+}
+.text-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--foreground-faint);
+}
+
+/* ---- Panel system (same shadow/radius language as .panel/.panel-strong) ---- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px -28px var(--shadow-strong), 0 2px 8px -4px var(--shadow);
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 9px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border);
-  font-weight: 650;
-  font-size: 14px;
 }
-.header img {
+.header .logo {
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   display: block;
+  flex-shrink: 0;
+}
+.header .wordmark {
+  font-size: 14px;
 }
 .header .spacer {
   flex: 1;
 }
 
 .pad {
-  padding: 14px 16px 16px;
+  padding: 16px;
 }
 
 label {
   display: block;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--fg-muted);
-  margin: 10px 0 4px;
+  margin: 12px 0 5px;
 }
 label:first-of-type {
   margin-top: 0;
@@ -67,21 +139,24 @@ select,
 textarea {
   width: 100%;
   font: inherit;
-  padding: 8px 10px;
-  border-radius: calc(var(--radius) - 0.3rem);
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--fg);
+  color: var(--foreground);
+  padding: 9px 11px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--panel-alt);
+  transition: border-color 120ms ease, background-color 120ms ease;
 }
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
+  background: var(--panel);
 }
 textarea {
-  min-height: 56px;
+  min-height: 58px;
   resize: vertical;
+  font-family: inherit;
 }
 
 .row {
@@ -90,10 +165,11 @@ textarea {
   gap: 8px;
 }
 
+/* ---- Buttons — same shapes as .fab-accent / the app's accent buttons ---- */
 .btn-primary {
   width: 100%;
-  margin-top: 14px;
-  padding: 10px 14px;
+  margin-top: 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 999px;
   background: var(--accent);
@@ -101,107 +177,130 @@ textarea {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 120ms ease, transform 100ms ease;
 }
 .btn-primary:hover {
   filter: brightness(1.08);
 }
+.btn-primary:active {
+  transform: scale(0.98);
+}
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: default;
+  transform: none;
 }
 
 .link-btn {
   background: none;
   border: none;
-  color: var(--fg-faint);
+  color: var(--foreground-faint);
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
   padding: 4px 6px;
+  border-radius: var(--radius-md);
+  transition: background-color 120ms ease, color 120ms ease;
 }
 .link-btn:hover {
-  color: var(--fg);
+  background: var(--hover-surface);
+  color: var(--foreground);
 }
 
 .error {
   color: var(--bad);
   font-size: 12px;
   min-height: 1em;
-  margin: 6px 0 0;
+  margin: 8px 0 0;
 }
 .success {
   color: var(--ok);
   font-size: 12px;
-  margin: 6px 0 0;
+  margin: 8px 0 0;
 }
 
+/* ---- Stat tiles — same shape as Recap's Stat component ---- */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .stat {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 0.2rem);
-  padding: 8px 4px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 9px 4px;
   text-align: center;
 }
 .stat b {
   display: block;
-  font-size: 17px;
+  font-size: 18px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 .stat span {
   font-size: 10px;
-  color: var(--fg-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--foreground-faint);
 }
 
 .next {
-  font-size: 12px;
-  color: var(--fg-muted);
-  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--foreground-muted);
+  margin: 0 0 16px;
+  padding: 9px 11px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-md);
+}
+.next b {
+  color: var(--foreground);
 }
 .next.muted {
-  opacity: 0.7;
-}
-
-h3 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--fg-muted);
-  margin: 0 0 8px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
 }
 
 .links {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 16px;
-  padding-top: 12px;
+  gap: 8px 16px;
+  margin-top: 18px;
+  padding-top: 14px;
   border-top: 1px solid var(--border);
 }
 .links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--accent);
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 .links a:hover {
   text-decoration: underline;
 }
 
 .center-note {
-  padding: 24px 16px;
+  padding: 32px 20px;
   text-align: center;
-  color: var(--fg-muted);
+  color: var(--foreground-muted);
+  font-size: 13px;
 }
 
-/* Used by quickadd.html, which opens as a full tab rather than a popup. */
-.card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  box-shadow: 0 24px 60px -28px rgba(20, 24, 32, 0.16);
-  overflow: hidden;
+.hint {
+  font-size: 11px;
+  color: var(--foreground-faint);
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }

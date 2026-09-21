@@ -1,4 +1,5 @@
 import { apiFetch, getAuth, clearAuth, login, getBaseUrl, formatTime12h, escapeHtml } from "./api.js";
+import { ICONS } from "./icons.js";
 
 const app = document.getElementById("app");
 
@@ -11,16 +12,24 @@ async function render() {
   renderHome(user);
 }
 
+function header(extra = "") {
+  return `
+    <div class="header">
+      <img src="icons/icon-32.png" class="logo" alt="" />
+      <span class="wordmark text-headline">DriveBoard</span>
+      <span class="spacer"></span>
+      ${extra}
+    </div>
+  `;
+}
+
 function renderLogin() {
   app.innerHTML = `
-    <div class="header">
-      <img src="icons/icon-32.png" width="20" height="20" alt="" />
-      <span>DriveBoard</span>
-    </div>
+    ${header()}
     <form id="login-form" class="pad">
-      <label for="email">Email</label>
+      <label for="email" class="text-label">Email</label>
       <input id="email" type="email" required autofocus autocomplete="username" />
-      <label for="password">Password</label>
+      <label for="password" class="text-label">Password</label>
       <input id="password" type="password" required autocomplete="current-password" />
       <p id="login-error" class="error"></p>
       <button type="submit" class="btn-primary" id="login-btn">Sign in</button>
@@ -49,12 +58,7 @@ function renderLogin() {
 
 async function renderHome(user) {
   app.innerHTML = `
-    <div class="header">
-      <img src="icons/icon-32.png" width="20" height="20" alt="" />
-      <span>DriveBoard</span>
-      <span class="spacer"></span>
-      <button id="logout" class="link-btn">Log out</button>
-    </div>
+    ${header(`<button id="logout" class="link-btn">Log out</button>`)}
     <div class="pad" id="content">Loading…</div>
   `;
   document.getElementById("logout").addEventListener("click", async () => {
@@ -96,19 +100,19 @@ async function renderHome(user) {
         : `<p class="next muted">Nothing left pending today.</p>`
     }
 
-    <h3>Quick add</h3>
+    <p class="text-label" style="margin: 0 0 8px;">Quick add</p>
     <form id="quick-form">
-      <label for="qa-name">Customer name</label>
+      <label for="qa-name" class="text-label">Customer name</label>
       <input id="qa-name" required autofocus />
-      <label for="qa-vehicle">Vehicle</label>
+      <label for="qa-vehicle" class="text-label">Vehicle</label>
       <input id="qa-vehicle" placeholder="2024 Toyota Camry" required />
       <div class="row">
         <div>
-          <label for="qa-date">Date</label>
+          <label for="qa-date" class="text-label">Date</label>
           <input id="qa-date" type="date" value="${today}" required />
         </div>
         <div>
-          <label for="qa-time">Time</label>
+          <label for="qa-time" class="text-label">Time</label>
           <input id="qa-time" type="time" value="09:00" required />
         </div>
       </div>
@@ -117,10 +121,10 @@ async function renderHome(user) {
     </form>
 
     <div class="links">
-      <a href="${baseUrl}/dashboard" target="_blank" rel="noopener">Dashboard</a>
-      <a href="${baseUrl}/tv" target="_blank" rel="noopener">Live board</a>
-      ${user.role === "manager" ? `<a href="${baseUrl}/admin" target="_blank" rel="noopener">Admin</a>` : ""}
-      <a href="${baseUrl}/settings" target="_blank" rel="noopener">Settings</a>
+      <a href="${baseUrl}/dashboard" target="_blank" rel="noopener">${ICONS.dashboard} Dashboard</a>
+      <a href="${baseUrl}/tv" target="_blank" rel="noopener">${ICONS.tv} Live board</a>
+      ${user.role === "manager" ? `<a href="${baseUrl}/admin" target="_blank" rel="noopener">${ICONS.admin} Admin</a>` : ""}
+      <a href="${baseUrl}/settings" target="_blank" rel="noopener">${ICONS.settings} Settings</a>
     </div>
   `;
 

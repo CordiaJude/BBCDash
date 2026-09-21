@@ -6,6 +6,7 @@ import { UserManagement } from "./UserManagement";
 import { Recap } from "./Recap";
 import { RecentlyDeleted } from "./RecentlyDeleted";
 import { AppraisalFunnel } from "./AppraisalFunnel";
+import { ExtensionDownload } from "./ExtensionDownload";
 
 export function AdminBoard({ user }: { user: SessionUser }) {
   const reps = useReps();
@@ -18,6 +19,7 @@ export function AdminBoard({ user }: { user: SessionUser }) {
       <AppraisalFunnel appointments={appointments} reps={reps} />
       <RecentlyDeleted reps={reps} />
       <UserManagement reps={reps} />
+      <ExtensionDownload />
     </div>
   );
 }

@@ -2,12 +2,16 @@ import { apiFetch, getAuth, escapeHtml } from "./api.js";
 
 const app = document.getElementById("app");
 
+function header(title) {
+  return `<div class="header"><img src="icons/icon-32.png" class="logo" alt="" /><span class="wordmark text-headline">${title}</span></div>`;
+}
+
 async function init() {
   const { token, user } = await getAuth();
   if (!token || !user) {
     app.innerHTML = `
-      <div class="card">
-        <div class="header"><img src="icons/icon-32.png" width="20" height="20" alt="" /><span>DriveBoard</span></div>
+      <div class="panel">
+        ${header("DriveBoard")}
         <div class="center-note">Sign in from the DriveBoard toolbar icon first, then try this again.</div>
       </div>
     `;
@@ -27,29 +31,29 @@ async function init() {
   const today = new Date().toISOString().slice(0, 10);
 
   app.innerHTML = `
-    <div class="card">
-      <div class="header"><img src="icons/icon-32.png" width="20" height="20" alt="" /><span>Add appointment</span></div>
+    <div class="panel">
+      ${header("Add appointment")}
       <form id="form" class="pad">
-        <label for="f-name">Customer name</label>
+        <label for="f-name" class="text-label">Customer name</label>
         <input id="f-name" value="${escapeHtml(prefill.customer_name || "")}" required autofocus />
 
-        <label for="f-vehicle">Vehicle</label>
+        <label for="f-vehicle" class="text-label">Vehicle</label>
         <input id="f-vehicle" value="${escapeHtml(prefill.vehicle || "")}" placeholder="2024 Toyota Camry" required />
 
         <div class="row">
           <div>
-            <label for="f-date">Date</label>
+            <label for="f-date" class="text-label">Date</label>
             <input id="f-date" type="date" value="${today}" required />
           </div>
           <div>
-            <label for="f-time">Time</label>
+            <label for="f-time" class="text-label">Time</label>
             <input id="f-time" type="time" value="09:00" required />
           </div>
         </div>
 
         ${
           reps.length
-            ? `<label for="f-rep">Assigned rep</label>
+            ? `<label for="f-rep" class="text-label">Assigned rep</label>
                <select id="f-rep">
                  ${reps.map((r) => `<option value="${r.id}" ${r.id === user.id ? "selected" : ""}>${escapeHtml(r.display_name)}</option>`).join("")}
                </select>`
@@ -58,16 +62,16 @@ async function init() {
 
         <div class="row">
           <div>
-            <label for="f-asking">Asking price</label>
+            <label for="f-asking" class="text-label">Asking price</label>
             <input id="f-asking" type="number" inputmode="decimal" value="${prefill.asking_price ?? ""}" />
           </div>
           <div>
-            <label for="f-market">Market indicates (min)</label>
+            <label for="f-market" class="text-label">Market indicates (min)</label>
             <input id="f-market" type="number" inputmode="decimal" value="${prefill.market_indicates_min ?? ""}" />
           </div>
         </div>
 
-        <label for="f-notes">Notes</label>
+        <label for="f-notes" class="text-label">Notes</label>
         <textarea id="f-notes">${escapeHtml(prefill.notes || "")}</textarea>
 
         <p id="error" class="error"></p>
@@ -98,8 +102,8 @@ async function init() {
     const res = await apiFetch("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
     if (res.ok) {
       app.innerHTML = `
-        <div class="card">
-          <div class="header"><img src="icons/icon-32.png" width="20" height="20" alt="" /><span>Add appointment</span></div>
+        <div class="panel">
+          ${header("Add appointment")}
           <div class="center-note">✅ Appointment added. You can close this tab.</div>
         </div>
       `;
