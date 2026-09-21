@@ -1,6 +1,6 @@
 "use client";
 
-import { CollapsibleSection } from "./CollapsibleSection";
+import { CollapsibleSection } from "./admin/CollapsibleSection";
 
 const STEPS = [
   { title: "Download & unzip", body: "Click “Download extension” below, then find driveboard-extension.zip in your Downloads and unzip it (double-click it on Mac, or right-click → Extract All on Windows)." },
@@ -20,7 +20,7 @@ function DownloadIcon() {
   );
 }
 
-/** Manager-facing "get the Chrome extension" panel — a real download link to the zip the extension/ folder is built into (see scripts/build-extension-zip.mjs), plus install steps since it's unpacked/developer-mode only (not on the Chrome Web Store). */
+/** "Get the Chrome extension" panel on every rep's/manager's personal dashboard — a real download link to the zip the extension/ folder is built into (see scripts/build-extension-zip.mjs), plus install steps since it's unpacked/developer-mode only (not on the Chrome Web Store). */
 export function ExtensionDownload() {
   return (
     <CollapsibleSection title="Chrome extension" defaultOpen={false}>

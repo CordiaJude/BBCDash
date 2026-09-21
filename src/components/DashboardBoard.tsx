@@ -10,6 +10,7 @@ import { useSoldShimmer } from "@/lib/useSoldShimmer";
 import { EmptyState } from "@/components/EmptyState";
 import { AppointmentRow, AppointmentTableHeader } from "./AppointmentRow";
 import { AppointmentCard } from "./AppointmentCard";
+import { ExtensionDownload } from "./ExtensionDownload";
 import { AppointmentModal } from "./AppointmentModal";
 import { todayISO } from "@/lib/time";
 
@@ -418,6 +419,10 @@ export function DashboardBoard({ user }: { user: SessionUser }) {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="mt-8 pt-2 border-t border-[var(--border)]">
+        <ExtensionDownload />
       </div>
 
       {modalOpen && (
